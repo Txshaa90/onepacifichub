@@ -67,7 +67,7 @@ const Hero = () => {
               className="flex flex-col sm:flex-row gap-4"
             >
               <motion.button
-                onClick={() => navigate('/products')}
+                onClick={() => navigate('/products/hubcaps')}
                 className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-10 py-5 rounded-xl font-bold text-lg shadow-2xl hover:shadow-blue-500/50 transition-all"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
