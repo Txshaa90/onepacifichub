@@ -13,14 +13,14 @@ const ProductCard = ({ product, index }) => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: index * 0.05 }}
-        className="bg-white rounded-xl shadow-md hover:shadow-xl overflow-hidden cursor-pointer transition-shadow duration-300 h-full flex flex-col"
+        className="bg-white border border-gray-200 overflow-hidden cursor-pointer h-full flex flex-col"
       >
         {/* Product Image */}
-        <div className="relative h-56 overflow-hidden bg-gray-100">
+        <div className="relative h-56 overflow-hidden bg-white p-4">
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
 
@@ -49,17 +49,14 @@ const ProductCard = ({ product, index }) => {
           </p>
 
           {/* Add to Cart Button */}
-          <motion.button
+          <button
             onClick={(e) => {
               e.preventDefault()
             }}
-            className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-3 rounded-lg font-semibold hover:shadow-lg transition-shadow flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="w-full bg-blue-600 text-white px-4 py-3 font-semibold flex items-center justify-center gap-2"
           >
-            <ShoppingCart size={18} />
             Add to Cart
-          </motion.button>
+          </button>
         </div>
       </motion.div>
     </Link>

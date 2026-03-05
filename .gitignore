@@ -14,3 +14,5 @@ Thumbs.db
 
 # Build folders (remove or comment out dist if you want to track it)
 # dist/
+
+.vercel

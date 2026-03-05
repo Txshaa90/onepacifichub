@@ -384,6 +384,115 @@ const ProductDetailPage = () => {
             )}
           </motion.div>
         </div>
+
+        {/* Similar Products Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mt-16"
+        >
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">Similar Products</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {categoryProducts
+              .filter(p => p.id !== product.id)
+              .slice(0, 4)
+              .map((similarProduct, index) => (
+                <Link key={similarProduct.id} to={`/products/${category}/${similarProduct.id}`}>
+                  <div className="bg-white border border-gray-200 overflow-hidden cursor-pointer h-full flex flex-col">
+                    <div className="relative h-48 overflow-hidden bg-white p-4">
+                      <img
+                        src={similarProduct.image}
+                        alt={similarProduct.name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 line-clamp-2">
+                        {similarProduct.name}
+                      </h3>
+                      <div className="mb-2">
+                        <StarRating rating={4.5} reviews={127} size={12} />
+                      </div>
+                      <div className="mt-auto">
+                        <span className="text-xl font-bold text-blue-600">
+                          ${similarProduct.price}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+          </div>
+        </motion.div>
+
+        {/* Customer Reviews Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mt-16"
+        >
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">Customer Reviews</h2>
+          
+          {/* Review Summary */}
+          <div className="bg-white border border-gray-200 p-6 mb-6">
+            <div className="flex flex-col md:flex-row gap-8 items-start">
+              <div className="text-center">
+                <div className="text-5xl font-bold text-gray-900 mb-2">4.5</div>
+                <StarRating rating={4.5} reviews={0} size={20} />
+                <p className="text-sm text-gray-600 mt-2">Based on 127 reviews</p>
+              </div>
+              <div className="flex-1">
+                <div className="space-y-2">
+                  {[5, 4, 3, 2, 1].map(stars => (
+                    <div key={stars} className="flex items-center gap-3">
+                      <span className="text-sm text-gray-600 w-12">{stars} star</span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-yellow-400 h-2 rounded-full" 
+                          style={{ width: `${stars === 5 ? 70 : stars === 4 ? 20 : 5}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm text-gray-600 w-12">{stars === 5 ? 70 : stars === 4 ? 20 : 5}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Individual Reviews */}
+          <div className="space-y-6">
+            {[
+              { name: 'John D.', rating: 5, date: 'February 15, 2026', comment: 'Perfect fit for my truck! Quality is excellent and installation was a breeze. Highly recommend!' },
+              { name: 'Sarah M.', rating: 5, date: 'February 10, 2026', comment: 'Great product at a great price. Looks amazing on my vehicle. Fast shipping too!' },
+              { name: 'Mike R.', rating: 4, date: 'February 5, 2026', comment: 'Good quality hubcaps. Only 4 stars because shipping took a bit longer than expected, but product is solid.' }
+            ].map((review, index) => (
+              <div key={index} className="bg-white border border-gray-200 p-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-bold text-gray-900">{review.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <StarRating rating={review.rating} reviews={0} size={14} />
+                      <span className="text-sm text-gray-500">{review.date}</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-700">{review.comment}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Write a Review Button */}
+          <div className="mt-8 text-center">
+            <button className="bg-blue-600 text-white px-8 py-3 font-semibold">
+              Write a Review
+            </button>
+          </div>
+        </motion.div>
       </div>
     </div>
   )
