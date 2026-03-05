@@ -18,6 +18,15 @@ const ProductDetailPage = () => {
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
 
+  // Find the category info
+  const categoryInfo = categories.find(cat => cat.slug === category)
+  
+  // Get all products for this category
+  const categoryProducts = products[categoryInfo?.id] || []
+  
+  // Find the specific product
+  const product = categoryProducts.find(p => p.id === productId)
+
   const productImages = useMemo(() => {
     if (!product) return []
     return [product.image, product.image, product.image]
@@ -47,14 +56,6 @@ const ProductDetailPage = () => {
   const prevImage = () => {
     setSelectedImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length)
   }
-  // Find the category info
-  const categoryInfo = categories.find(cat => cat.slug === category)
-  
-  // Get all products for this category
-  const categoryProducts = products[categoryInfo?.id] || []
-  
-  // Find the specific product
-  const product = categoryProducts.find(p => p.id === productId)
 
   // Extract product specifications from name and description
   const specifications = useMemo(() => {
