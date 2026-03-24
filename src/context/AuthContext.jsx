@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import * as authService from '../services/authService'
 import * as supabaseAuthService from '../services/supabaseAuthService'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const AuthContext = createContext()
 
@@ -43,6 +43,26 @@ export const AuthProvider = ({ children }) => {
     }
     
     initAuth()
+  }, [])
+
+  // Keep user in sync after Google OAuth redirect and other session changes
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !supabase) return
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const mapped = await supabaseAuthService.getSupabaseSession()
+        if (mapped) {
+          localStorage.setItem('authToken', mapped.token)
+          setUser(mapped.user)
+        }
+      } else {
+        localStorage.removeItem('authToken')
+        setUser(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   // Login function - Uses Supabase authentication
@@ -92,6 +112,51 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: errorMessage }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loginWithGoogle = async () => {
+    try {
+      setError(null)
+      if (!isSupabaseConfigured()) {
+        throw new Error('Authentication not configured. Please contact support.')
+      }
+      await supabaseAuthService.signInWithGoogle()
+      return { success: true }
+    } catch (err) {
+      const errorMessage = err.message || 'Google sign-in failed'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
+    }
+  }
+
+  const loginWithFacebook = async () => {
+    try {
+      setError(null)
+      if (!isSupabaseConfigured()) {
+        throw new Error('Authentication not configured. Please contact support.')
+      }
+      await supabaseAuthService.signInWithFacebook()
+      return { success: true }
+    } catch (err) {
+      const errorMessage = err.message || 'Facebook sign-in failed'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
+    }
+  }
+
+  const loginWithTwitter = async () => {
+    try {
+      setError(null)
+      if (!isSupabaseConfigured()) {
+        throw new Error('Authentication not configured. Please contact support.')
+      }
+      await supabaseAuthService.signInWithTwitter()
+      return { success: true }
+    } catch (err) {
+      const errorMessage = err.message || 'X / Twitter sign-in failed'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
     }
   }
 
@@ -178,6 +243,9 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     login,
+    loginWithGoogle,
+    loginWithFacebook,
+    loginWithTwitter,
     register,
     logout,
     updateProfile,

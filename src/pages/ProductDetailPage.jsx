@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ShoppingCart, Star, Check, Minus, Plus, Package, Palette, Building2, Wrench, ChevronLeft, ChevronRight } from 'lucide-react'
-import { products, categories } from '../data/products'
+import { categories } from '../data/categories'
 import { useCart } from '../context/CartContext'
+import { fetchCollectionProducts, fetchProductByHandle, isShopifyConfigured } from '../lib/shopifyStorefront'
 import Breadcrumb from '../components/Breadcrumb'
 import StarRating from '../components/StarRating'
 import ImageZoom from '../components/ImageZoom'
@@ -20,16 +21,48 @@ const ProductDetailPage = () => {
 
   // Find the category info
   const categoryInfo = categories.find(cat => cat.slug === category)
-  
-  // Get all products for this category
-  const categoryProducts = products[categoryInfo?.id] || []
-  
-  // Find the specific product
-  const product = categoryProducts.find(p => p.id === productId)
+
+  const [product, setProduct] = useState(null)
+  const [categoryProducts, setCategoryProducts] = useState([])
+  const [loadingProduct, setLoadingProduct] = useState(true)
+  const [productError, setProductError] = useState(null)
+  const [cartError, setCartError] = useState(null)
+
+  useEffect(() => {
+    if (!categoryInfo) return
+
+    if (!isShopifyConfigured()) {
+      setProductError('Shopify is not configured.')
+      setProduct(null)
+      setCategoryProducts([])
+      setLoadingProduct(false)
+      return
+    }
+
+    setLoadingProduct(true)
+    setProductError(null)
+    setProduct(null)
+    setCategoryProducts([])
+
+    Promise.all([
+      fetchProductByHandle({ handle: productId }),
+      fetchCollectionProducts({ handle: categoryInfo.id })
+    ])
+      .then(([p, items]) => {
+        setProduct(p)
+        setCategoryProducts(items || [])
+      })
+      .catch((e) => {
+        console.error('Failed to load Shopify product:', e)
+        setProductError(e.message || 'Failed to load product')
+      })
+      .finally(() => setLoadingProduct(false))
+  }, [categoryInfo?.id, productId])
 
   const productImages = useMemo(() => {
     if (!product) return []
-    return [product.image, product.image, product.image]
+    if (Array.isArray(product.images) && product.images.length) return product.images
+    return product.image ? [product.image] : []
   }, [product])
 
   const handleTouchStart = (e) => {
@@ -101,6 +134,26 @@ const ProductDetailPage = () => {
     return specs
   }, [product])
 
+  if (loadingProduct) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
+        <p className="text-gray-700 text-lg font-semibold">Loading product...</p>
+      </div>
+    )
+  }
+
+  if (productError) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center max-w-lg px-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Could not load product</h1>
+          <p className="text-gray-600 mb-4">{productError}</p>
+          <Link to="/" className="text-blue-600 hover:underline">Return to Home</Link>
+        </div>
+      </div>
+    )
+  }
+
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -115,9 +168,20 @@ const ProductDetailPage = () => {
   }
 
   const handleAddToCart = () => {
+    setCartError(null)
     addToCart(product, quantity)
-    setAddedToCart(true)
-    setTimeout(() => setAddedToCart(false), 2000)
+      .then((res) => {
+        if (res?.success) {
+          setAddedToCart(true)
+          setTimeout(() => setAddedToCart(false), 2000)
+        } else {
+          setCartError(res?.error || 'Could not add to cart')
+        }
+      })
+      .catch((e) => {
+        console.error('Add to cart failed:', e)
+        setCartError(e?.message || 'Could not add to cart')
+      })
   }
 
   const incrementQuantity = () => setQuantity(prev => prev + 1)
@@ -252,6 +316,11 @@ const ProductDetailPage = () => {
               </div>
               
               <p className="text-sm text-gray-500">Part #: {product.id}</p>
+              {product.metafield?.value && (
+                <p className="mt-3 text-gray-800">
+                  <strong>Compatible with:</strong> {product.metafield.value}
+                </p>
+              )}
             </div>
 
             {/* Price */}
@@ -366,6 +435,12 @@ const ProductDetailPage = () => {
                   </>
                 )}
               </motion.button>
+
+              {cartError && (
+                <p className="mt-3 text-sm text-red-600 font-semibold text-center">
+                  {cartError}
+                </p>
+              )}
             </div>
 
             {/* View Cart Link */}

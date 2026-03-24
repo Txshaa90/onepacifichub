@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import logoImage from '/Logo/Onepacific hub logo.jpg'
+import logoImage from '../../OPH/Logo.png'
 
 const Logo = ({ className = "", size = "default" }) => {
   const sizes = {

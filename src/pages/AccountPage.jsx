@@ -77,8 +77,9 @@ const AccountPage = () => {
             {/* Sidebar */}
             <div className="lg:col-span-1 space-y-4">
               <motion.div
+                id="orders"
                 whileHover={{ y: -2 }}
-                className="bg-white rounded-xl p-6 shadow-md cursor-pointer"
+                className="bg-white rounded-xl p-6 shadow-md cursor-pointer scroll-mt-28"
               >
                 <div className="flex items-center gap-3 text-blue-600">
                   <Package size={24} />

@@ -1,20 +1,60 @@
 import { motion } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Search, Filter, X, ChevronDown } from 'lucide-react'
-import { products, categories } from '../data/products'
+import { categories } from '../data/categories'
 import ProductCard from '../components/ProductCard'
 import Breadcrumb from '../components/Breadcrumb'
 import Pagination from '../components/Pagination'
 import { useState, useMemo, useEffect } from 'react'
+import hubcapsBanner from '../../OPH/Hubcaps.jpg'
+import wheelSkinsBanner from '../../OPH/Wheel Skins.jpg'
+import wheelSimulatorsBanner from '../../OPH/Wheel Simulators.jpg'
+import trimRingsBanner from '../../OPH/Trim rings.jpg'
+import { fetchCollectionProducts, isShopifyConfigured } from '../lib/shopifyStorefront'
 
 const ProductsPage = () => {
   const { category } = useParams()
   
   // Find the category info
   const categoryInfo = categories.find(cat => cat.slug === category)
-  
-  // Get products for this category
-  const categoryProducts = products[categoryInfo?.id] || []
+
+  // Banner images for each category
+  const bannerImages = {
+    'hubcaps': hubcapsBanner,
+    'wheelskins': wheelSkinsBanner,
+    'wheel-simulator': wheelSimulatorsBanner,
+    'trim-rings': trimRingsBanner
+  }
+
+  // Shopify products for this category
+  const [categoryProducts, setCategoryProducts] = useState([])
+  const [loadingProducts, setLoadingProducts] = useState(true)
+  const [productsError, setProductsError] = useState(null)
+
+  useEffect(() => {
+    if (!categoryInfo) return
+
+    if (!isShopifyConfigured()) {
+      setProductsError('Shopify is not configured.')
+      setCategoryProducts([])
+      setLoadingProducts(false)
+      return
+    }
+
+    setLoadingProducts(true)
+    setProductsError(null)
+    setCategoryProducts([])
+
+    fetchCollectionProducts({ handle: categoryInfo.id })
+      .then((items) => {
+        setCategoryProducts(items)
+      })
+      .catch((e) => {
+        console.error('Failed to load Shopify collection products:', e)
+        setProductsError(e.message || 'Failed to load products')
+      })
+      .finally(() => setLoadingProducts(false))
+  }, [categoryInfo?.id])
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
@@ -35,6 +75,15 @@ const ProductsPage = () => {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  useEffect(() => {
+    setCurrentPage(1)
+    setSearchQuery('')
+    setSelectedBrand('')
+    setSelectedYear('')
+    setSelectedMake('')
+    setSelectedModel('')
+  }, [categoryInfo?.id])
 
   const itemsPerPage = isMobile ? 12 : 24
 
@@ -168,6 +217,30 @@ const ProductsPage = () => {
     )
   }
 
+  if (loadingProducts) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-700 text-lg font-semibold">Loading products...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (productsError) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
+        <div className="text-center max-w-lg px-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Could not load products</h1>
+          <p className="text-gray-600 mb-4">{productsError}</p>
+          <Link to="/" className="text-blue-600 hover:underline">
+            Return to Home
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -178,24 +251,21 @@ const ProductsPage = () => {
           ]}
         />
 
-        {/* Informational Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-4 md:p-6"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-white text-center md:text-left">
-              <h3 className="text-lg md:text-xl font-bold mb-1">
-                ✓ Authentic OEM Parts • ✓ Fast Shipping • ✓ Quality Guaranteed
-              </h3>
-              <p className="text-sm md:text-base text-blue-100">
-                All products are genuine parts with warranty coverage
-              </p>
-            </div>
-          </div>
-        </motion.div>
+        {/* Category Banner Image */}
+        {bannerImages[categoryInfo.id] && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-6 rounded-xl overflow-hidden shadow-lg"
+          >
+            <img
+              src={bannerImages[categoryInfo.id]}
+              alt={`${categoryInfo.name} banner`}
+              className="w-full h-auto max-h-80 md:max-h-96 object-contain bg-white"
+            />
+          </motion.div>
+        )}
 
         {/* Category Header */}
         <motion.div

@@ -12,7 +12,7 @@ Thumbs.db
 # Environment files
 .env
 
-# Build folders (remove or comment out dist if you want to track it)
-# dist/
+# Build folders
+dist/
 
 .vercel

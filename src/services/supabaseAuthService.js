@@ -17,13 +17,68 @@ export const loginWithSupabase = async (email, password) => {
 
   return {
     token: data.session.access_token,
-    user: {
-      id: data.user.id,
-      email: data.user.email,
-      firstName: data.user.user_metadata?.firstName || '',
-      lastName: data.user.user_metadata?.lastName || '',
-      ...data.user.user_metadata
+    user: mapSupabaseUser(data.user)
+  }
+}
+
+const mapSupabaseUser = (u) => ({
+  ...u.user_metadata,
+  id: u.id,
+  email: u.email,
+  firstName: u.user_metadata?.firstName || u.user_metadata?.full_name?.split?.(' ')?.[0] || '',
+  lastName: u.user_metadata?.lastName || '',
+  avatarUrl: u.user_metadata?.avatar_url || u.user_metadata?.picture || ''
+})
+
+// Google OAuth — redirects back to this app after provider login
+export const signInWithGoogle = async () => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file')
+  }
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/`
     }
+  })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
+export const signInWithFacebook = async () => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file')
+  }
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'facebook',
+    options: {
+      redirectTo: `${window.location.origin}/`
+    }
+  })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
+export const signInWithTwitter = async () => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file')
+  }
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'twitter',
+    options: {
+      redirectTo: `${window.location.origin}/`
+    }
+  })
+
+  if (error) {
+    throw new Error(error.message)
   }
 }
 
@@ -56,13 +111,7 @@ export const registerWithSupabase = async (userData) => {
 
   return {
     token: data.session.access_token,
-    user: {
-      id: data.user.id,
-      email: data.user.email,
-      firstName: data.user.user_metadata?.firstName || firstName,
-      lastName: data.user.user_metadata?.lastName || lastName,
-      ...data.user.user_metadata
-    }
+    user: mapSupabaseUser(data.user)
   }
 }
 
@@ -95,13 +144,7 @@ export const getSupabaseSession = async () => {
 
   return {
     token: session.access_token,
-    user: {
-      id: session.user.id,
-      email: session.user.email,
-      firstName: session.user.user_metadata?.firstName || '',
-      lastName: session.user.user_metadata?.lastName || '',
-      ...session.user.user_metadata
-    }
+    user: mapSupabaseUser(session.user)
   }
 }
 
@@ -172,5 +215,8 @@ export default {
   getSupabaseSession,
   verifySupabaseToken,
   requestPasswordResetSupabase,
-  updatePasswordSupabase
+  updatePasswordSupabase,
+  signInWithGoogle,
+  signInWithFacebook,
+  signInWithTwitter
 }

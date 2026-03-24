@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import {
+  fetchCart,
+  cartCreate,
+  cartLinesAdd,
+  cartLinesUpdate,
+  cartLinesRemove,
+  isShopifyConfigured
+} from '../lib/shopifyStorefront'
 
 const CartContext = createContext()
 
@@ -11,66 +19,111 @@ export const useCart = () => {
 }
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState(() => {
-    // Load cart from localStorage on init
-    const savedCart = localStorage.getItem('cart')
-    return savedCart ? JSON.parse(savedCart) : []
-  })
+  const [cartItems, setCartItems] = useState([])
+  const [cartId, setCartId] = useState(null)
+  const [checkoutUrl, setCheckoutUrl] = useState(null)
+  const [totalAmount, setTotalAmount] = useState(0)
+  const [currencyCode, setCurrencyCode] = useState('USD')
 
-  // Save cart to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems))
-  }, [cartItems])
-
-  const addToCart = (product, quantity = 1) => {
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id)
-      
-      if (existingItem) {
-        return prevItems.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        )
-      }
-      
-      return [...prevItems, { ...product, quantity }]
-    })
-  }
-
-  const removeFromCart = (productId) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== productId))
-  }
-
-  const updateQuantity = (productId, quantity) => {
-    if (quantity <= 0) {
-      removeFromCart(productId)
+  const refreshCart = useCallback(async (id) => {
+    if (!id) return
+    const cart = await fetchCart(id)
+    if (!cart) {
+      setCartId(null)
+      setCartItems([])
+      setCheckoutUrl(null)
+      setTotalAmount(0)
       return
     }
-    
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    )
+    setCartId(cart.id)
+    setCartItems(cart.items)
+    setCheckoutUrl(cart.checkoutUrl)
+    setTotalAmount(cart.totalAmount)
+    setCurrencyCode(cart.currencyCode)
+  }, [])
+
+  useEffect(() => {
+    // Shopify cart is session-based; we persist the cart id in localStorage.
+    if (!isShopifyConfigured()) return
+    const savedCartId = localStorage.getItem('shopifyCartId')
+    if (savedCartId) {
+      refreshCart(savedCartId).catch((e) => {
+        console.warn('Failed to load Shopify cart:', e)
+      })
+    }
+  }, [refreshCart])
+
+  const addToCart = async (product, quantity = 1) => {
+    if (!isShopifyConfigured()) {
+      // Keep UI from breaking when Shopify isn't set up yet.
+      return { success: false, error: 'Shopify is not configured.' }
+    }
+    if (!product?.variantId) {
+      return { success: false, error: 'This product has no purchasable variant.' }
+    }
+
+    const lines = [{ merchandiseId: product.variantId, quantity }]
+
+    const nextCart = cartId
+      ? await cartLinesAdd({ cartId, lines })
+      : await cartCreate({ lines })
+
+    if (!nextCart) {
+      return { success: false, error: 'Unable to create cart.' }
+    }
+
+    await refreshCart(nextCart.id)
+    return { success: true }
   }
 
-  const clearCart = () => {
+  const removeFromCart = async (lineId) => {
+    if (!isShopifyConfigured()) return
+    if (!cartId) return
+    await cartLinesRemove({ cartId, lineIds: [lineId] })
+    await refreshCart(cartId)
+  }
+
+  const updateQuantity = async (lineId, quantity) => {
+    if (!isShopifyConfigured()) return
+    if (!cartId) return
+    if (quantity <= 0) {
+      await removeFromCart(lineId)
+      return
+    }
+
+    const lines = [{ lineId, quantity }]
+    await cartLinesUpdate({ cartId, lines })
+    await refreshCart(cartId)
+  }
+
+  const clearCart = async () => {
+    if (!isShopifyConfigured()) return
+    if (!cartId) return
+    const lineIds = cartItems.map((i) => i.lineId)
+    if (!lineIds.length) return
+    await cartLinesRemove({ cartId, lineIds })
+    localStorage.removeItem('shopifyCartId')
+    setCartId(null)
     setCartItems([])
+    setCheckoutUrl(null)
+    setTotalAmount(0)
   }
 
-  const getCartTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
-  }
+  // When we create/load the cart, persist the cart id.
+  useEffect(() => {
+    if (!isShopifyConfigured()) return
+    if (cartId) localStorage.setItem('shopifyCartId', cartId)
+  }, [cartId])
 
-  const getCartCount = () => {
-    return cartItems.reduce((count, item) => count + item.quantity, 0)
-  }
+  const getCartTotal = () => totalAmount
+  const getCartCount = () => cartItems.reduce((count, item) => count + item.quantity, 0)
 
   return (
     <CartContext.Provider
       value={{
         cartItems,
+        checkoutUrl,
+        currencyCode,
         addToCart,
         removeFromCart,
         updateQuantity,

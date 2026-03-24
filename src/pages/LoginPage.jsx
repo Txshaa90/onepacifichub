@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import SocialOAuthButtons from '../components/SocialOAuthButtons'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -147,15 +148,7 @@ const LoginPage = () => {
             </motion.button>
           </form>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or</span>
-            </div>
-          </div>
+          <SocialOAuthButtons className="mt-8" />
 
           {/* Sign Up Link */}
           <div className="text-center">
