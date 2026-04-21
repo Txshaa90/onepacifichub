@@ -73,12 +73,12 @@ export default function SharedViewBar({ fieldOptions = [], filters = [], onFilte
               {f.operator !== 'empty' && f.operator !== 'not_empty' && (
                 <span className="font-medium">{String(f.value)}</span>
               )}
-              <button onClick={() => removeCondition(f.id)} className="p-1 hover:bg-neutral-200 rounded-full" title="Remove filter">
-                <Trash2 size={14} className="text-neutral-500" />
+              <button type="button" onClick={() => removeCondition(f.id)} className="p-1 hover:bg-neutral-200 rounded-full" title="Remove this filter" aria-label="Remove filter">
+                <Trash2 size={14} className="text-neutral-500" aria-hidden />
               </button>
             </div>
           ))}
-          <button onClick={clearAll} className="text-xs text-neutral-600 hover:text-neutral-800 underline">Clear all</button>
+          <button type="button" onClick={clearAll} title="Clear all filters" className="text-xs text-neutral-600 hover:text-neutral-800 underline">Clear all</button>
         </div>
       )}
 
@@ -107,8 +107,8 @@ export default function SharedViewBar({ fieldOptions = [], filters = [], onFilte
         </select>
 
         {draft.operator === 'empty' || draft.operator === 'not_empty' ? (
-          <button onClick={addCondition} className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 inline-flex items-center gap-2">
-            <Plus size={16} /> Add
+          <button type="button" onClick={addCondition} title="Add filter condition" className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 inline-flex items-center gap-2">
+            <Plus size={16} aria-hidden /> Add
           </button>
         ) : (
           <div className="flex items-center gap-2">
@@ -119,8 +119,8 @@ export default function SharedViewBar({ fieldOptions = [], filters = [], onFilte
               title="Value"
               className="flex-1 px-2 py-2 border border-neutral-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button onClick={addCondition} className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 inline-flex items-center gap-2">
-              <Plus size={16} /> Add
+            <button type="button" onClick={addCondition} title="Add filter condition" className="px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 inline-flex items-center gap-2">
+              <Plus size={16} aria-hidden /> Add
             </button>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { a11yAction } from '../lib/controlHints'
 
 const Pagination = ({ currentPage, totalPages, onPageChange, isMobile = false }) => {
   const getPageNumbers = () => {
@@ -40,6 +41,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange, isMobile = false })
   return (
     <div className="flex items-center justify-center gap-2 mt-8">
       <motion.button
+        type="button"
+        {...a11yAction('Previous page')}
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
         className={`p-2 rounded-lg ${
@@ -50,7 +53,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, isMobile = false })
         whileHover={currentPage !== 1 ? { scale: 1.05 } : {}}
         whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
       >
-        <ChevronLeft size={20} />
+        <ChevronLeft size={20} aria-hidden />
       </motion.button>
 
       {getPageNumbers().map((page, index) => (
@@ -60,7 +63,12 @@ const Pagination = ({ currentPage, totalPages, onPageChange, isMobile = false })
           </span>
         ) : (
           <motion.button
+            type="button"
             key={page}
+            {...a11yAction(
+              currentPage === page ? `Current page, page ${page}` : `Go to page ${page}`
+            )}
+            aria-current={currentPage === page ? 'page' : undefined}
             onClick={() => onPageChange(page)}
             className={`px-4 py-2 rounded-lg font-semibold ${
               currentPage === page
@@ -76,6 +84,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange, isMobile = false })
       ))}
 
       <motion.button
+        type="button"
+        {...a11yAction('Next page')}
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
         className={`p-2 rounded-lg ${
@@ -86,7 +96,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, isMobile = false })
         whileHover={currentPage !== totalPages ? { scale: 1.05 } : {}}
         whileTap={currentPage !== totalPages ? { scale: 0.95 } : {}}
       >
-        <ChevronRight size={20} />
+        <ChevronRight size={20} aria-hidden />
       </motion.button>
     </div>
   )

@@ -1,50 +1,80 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react'
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import SocialOAuthButtons from '../components/SocialOAuthButtons'
+
+const validateLogin = (email, password) => {
+  if (!email?.trim()) return 'Email is required'
+  if (!/\S+@\S+\.\S+/.test(email.trim())) return 'Invalid email format'
+  if (!password) return 'Password is required'
+  if (password.length < 6) return 'Password must be at least 6 characters'
+  return null
+}
 
 const LoginPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { login } = useAuth()
+  const { login, loading, isAuthenticated } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [touched, setTouched] = useState({ email: false, password: false })
 
   const from = location.state?.from?.pathname || '/'
 
+  if (isAuthenticated) {
+    return <Navigate to={from === '/login' ? '/' : from} replace />
+  }
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
     setError('')
   }
 
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }))
+  }
+
+  const emailValid = !!(formData.email.trim() && /\S+@\S+\.\S+/.test(formData.email.trim()))
+  const passwordValid = formData.password.length >= 6
+  const emailShowError = touched.email && !emailValid
+  const passwordShowError = touched.password && !passwordValid
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    setTouched({ email: true, password: true })
     setError('')
 
-    const result = await login(formData.email, formData.password, rememberMe)
-    
+    const validationError = validateLogin(formData.email, formData.password)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    const result = await login(formData.email.trim(), formData.password, rememberMe)
+
     if (result.success) {
       navigate(from, { replace: true })
     } else {
       setError(result.error)
     }
-    
-    setLoading(false)
+  }
+
+  const fieldBorder = (showErr, valid, touchedField) => {
+    if (showErr) return 'border-red-500 focus:ring-red-200'
+    if (touchedField && valid) return 'border-green-500 focus:ring-green-200'
+    return 'border-gray-300 focus:ring-blue-500'
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-24 pb-16">
+    <div className="flex-1 w-full min-h-0 flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-24 pb-16">
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -52,7 +82,6 @@ const LoginPage = () => {
           transition={{ duration: 0.6 }}
           className="bg-white rounded-2xl shadow-xl p-8"
         >
-          {/* Header */}
           <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0 }}
@@ -66,7 +95,16 @@ const LoginPage = () => {
             <p className="text-gray-600">Sign in to your account</p>
           </div>
 
-          {/* Error Message */}
+          {location.state?.resetSuccess && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm font-medium"
+            >
+              Password successfully updated. You can now log in.
+            </motion.div>
+          )}
+
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -78,9 +116,7 @@ const LoginPage = () => {
             </motion.div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -91,16 +127,16 @@ const LoginPage = () => {
                   type="email"
                   id="email"
                   name="email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  onBlur={() => handleBlur('email')}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all ${fieldBorder(emailShowError, emailValid, touched.email)}`}
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -108,21 +144,31 @@ const LoginPage = () => {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  onBlur={() => handleBlur('password')}
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:border-transparent transition-all ${fieldBorder(passwordShowError, passwordValid, touched.password)}`}
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 p-1 rounded"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
+              <p className="mt-1 text-xs text-gray-500">At least 6 characters</p>
             </div>
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center cursor-pointer">
+            <div className="flex items-center justify-between gap-4">
+              <label className="flex items-center cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -131,29 +177,37 @@ const LoginPage = () => {
                 />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
               </label>
-              <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
+              <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-semibold shrink-0">
                 Forgot password?
               </Link>
             </div>
 
-            {/* Submit Button */}
             <motion.button
               type="submit"
               disabled={loading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-busy={loading}
+              aria-label={loading ? 'Signing in' : 'Sign in with email and password'}
+              title={loading ? 'Signing in…' : 'Sign in'}
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                'Sign In'
+              )}
             </motion.button>
           </form>
 
-          <SocialOAuthButtons className="mt-8" />
+          <SocialOAuthButtons className="mt-8" rememberMe={rememberMe} />
 
-          {/* Sign Up Link */}
-          <div className="text-center">
+          <div className="text-center mt-6">
             <p className="text-gray-600">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold">
                 Sign up
               </Link>

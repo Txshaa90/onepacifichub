@@ -121,6 +121,7 @@ export const fetchProductByHandle = async ({ handle }) => {
         handle
         title
         description
+        descriptionHtml
         metafield(namespace: "custom", key: "fitment") {
           value
         }
@@ -161,6 +162,7 @@ export const fetchProductByHandle = async ({ handle }) => {
     handle: p.handle,
     name: p.title,
     description: stripHtml(p.description),
+    descriptionHtml: p.descriptionHtml || '',
     metafield: p.metafield || null,
     image: images[0] || '',
     images: images.slice(0, 12),
@@ -363,3 +365,5 @@ export const cartLinesRemove = async ({ cartId, lineIds }) => {
   return fetchCart(cart.id)
 }
 
+/** Same as the internal GraphQL client — matches Shopify headless docs that use `storefront()`. */
+export { fetchGraphQL as storefront }

@@ -1,13 +1,17 @@
 import { motion } from 'framer-motion'
-import { ShoppingCart } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import StarRating from './StarRating'
 
-const ProductCard = ({ product, index }) => {
+const ProductCard = ({ product, index, categorySlug: categorySlugProp }) => {
   const { category } = useParams()
-  
+  const targetCategory = categorySlugProp || category
+
   return (
-    <Link to={`/products/${category}/${product.id}`}>
+    <Link
+      to={`/products/${targetCategory}/${product.id}`}
+      aria-label={`${product.name}, view product details`}
+      title={`View ${product.name}`}
+    >
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -48,15 +52,10 @@ const ProductCard = ({ product, index }) => {
             {product.description}
           </p>
 
-          {/* Add to Cart Button */}
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-            }}
-            className="w-full bg-blue-600 text-white px-4 py-3 font-semibold flex items-center justify-center gap-2"
-          >
-            Add to Cart
-          </button>
+          {/* CTA matches behavior: whole card opens the product (no nested interactive control). */}
+          <span className="w-full bg-blue-600 text-white px-4 py-3 font-semibold flex items-center justify-center gap-2 pointer-events-none">
+            View product
+          </span>
         </div>
       </motion.div>
     </Link>

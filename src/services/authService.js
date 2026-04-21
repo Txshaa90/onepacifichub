@@ -1,6 +1,8 @@
 // Authentication Service
 // This is a mock service for development. Replace with real API calls in production.
 
+import { getMirroredAuthToken } from '../lib/authStorage'
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 // Simulate API delay
@@ -163,6 +165,11 @@ export const login = async (email, password, rememberMe = false) => {
 export const logout = async () => {
   await delay(300)
   localStorage.removeItem('authToken')
+  try {
+    sessionStorage.removeItem('authToken')
+  } catch {
+    /* ignore */
+  }
   localStorage.removeItem('rememberMe')
   return { success: true }
 }
@@ -204,7 +211,7 @@ export const verifyToken = async (token) => {
 
 // Get current user
 export const getCurrentUser = async () => {
-  const token = localStorage.getItem('authToken')
+  const token = getMirroredAuthToken()
   
   if (!token) {
     throw new Error('Not authenticated')
@@ -269,42 +276,6 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
   return { success: true }
 }
 
-// Request password reset
-export const requestPasswordReset = async (email) => {
-  await delay(800)
-  
-  if (!isValidEmail(email)) {
-    throw new Error('Invalid email address')
-  }
-  
-  const users = JSON.parse(localStorage.getItem('mockUsers') || '[]')
-  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase())
-  
-  // Always return success for security (don't reveal if email exists)
-  return {
-    success: true,
-    message: 'If an account exists with this email, you will receive a password reset link.'
-  }
-}
-
-// Reset password with token
-export const resetPassword = async (token, newPassword) => {
-  await delay(500)
-  
-  const passwordValidation = validatePassword(newPassword)
-  if (!passwordValidation.isValid) {
-    throw new Error(passwordValidation.errors[0])
-  }
-  
-  // In production, verify the reset token from the backend
-  // For now, this is a mock implementation
-  
-  return {
-    success: true,
-    message: 'Password has been reset successfully'
-  }
-}
-
 export default {
   register,
   login,
@@ -313,8 +284,6 @@ export default {
   getCurrentUser,
   updateProfile,
   changePassword,
-  requestPasswordReset,
-  resetPassword,
   validatePassword,
   isValidEmail
 }

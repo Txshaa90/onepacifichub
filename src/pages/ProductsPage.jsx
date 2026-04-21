@@ -1,7 +1,11 @@
 import { motion } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Search, Filter, X, ChevronDown } from 'lucide-react'
-import { categories } from '../data/categories'
+import {
+  categories,
+  findMainCategoryBySlug,
+  getSubcategoriesForMainCategory
+} from '../data/categories'
 import ProductCard from '../components/ProductCard'
 import Breadcrumb from '../components/Breadcrumb'
 import Pagination from '../components/Pagination'
@@ -11,12 +15,15 @@ import wheelSkinsBanner from '../../OPH/Wheel Skins.jpg'
 import wheelSimulatorsBanner from '../../OPH/Wheel Simulators.jpg'
 import trimRingsBanner from '../../OPH/Trim rings.jpg'
 import { fetchCollectionProducts, isShopifyConfigured } from '../lib/shopifyStorefront'
+import { a11yAction } from '../lib/controlHints'
 
 const ProductsPage = () => {
   const { category } = useParams()
   
   // Find the category info
   const categoryInfo = categories.find(cat => cat.slug === category)
+  const parentCategory = categoryInfo ? findMainCategoryBySlug(categoryInfo.parentSlug) : null
+  const siblingSubcategories = parentCategory ? getSubcategoriesForMainCategory(parentCategory.slug) : []
 
   // Banner images for each category
   const bannerImages = {
@@ -45,7 +52,7 @@ const ProductsPage = () => {
     setProductsError(null)
     setCategoryProducts([])
 
-    fetchCollectionProducts({ handle: categoryInfo.id })
+    fetchCollectionProducts({ handle: categoryInfo.shopifyHandle || categoryInfo.id })
       .then((items) => {
         setCategoryProducts(items)
       })
@@ -247,6 +254,7 @@ const ProductsPage = () => {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
+            ...(parentCategory ? [{ label: parentCategory.name, href: `/category/${parentCategory.slug}` }] : []),
             { label: categoryInfo.name, href: null }
           ]}
         />
@@ -274,6 +282,11 @@ const ProductsPage = () => {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
+          {parentCategory ? (
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+              {parentCategory.name}
+            </p>
+          ) : null}
           <h1 className="text-4xl font-bold mb-2 text-gray-900">
             {categoryInfo.name}
           </h1>
@@ -281,6 +294,29 @@ const ProductsPage = () => {
             {categoryInfo.description}
           </p>
         </motion.div>
+
+        {siblingSubcategories.length > 1 ? (
+          <div className="mb-8 rounded-2xl bg-white p-4 shadow-md">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.15em] text-gray-500">
+              Browse {parentCategory?.name}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {siblingSubcategories.map((subcategory) => (
+                <Link
+                  key={subcategory.slug}
+                  to={`/products/${subcategory.slug}`}
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                    subcategory.slug === categoryInfo.slug
+                      ? 'border-blue-600 bg-blue-600 text-white'
+                      : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+                  }`}
+                >
+                  {subcategory.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {/* Main Content Area with Sidebar */}
         <div className="flex flex-col md:flex-row gap-6">
@@ -384,8 +420,10 @@ const ProductsPage = () => {
               {/* Clear Filters */}
               {(searchQuery || selectedBrand || selectedYear || selectedMake || selectedModel) && (
                 <button
+                  type="button"
                   onClick={clearFilters}
                   className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-sm"
+                  title="Clear all filters"
                 >
                   Clear All Filters
                 </button>
@@ -396,10 +434,12 @@ const ProductsPage = () => {
           {/* Mobile Filter Button */}
           <div className="md:hidden mb-4">
             <button
+              type="button"
               onClick={() => setShowMobileFilters(true)}
               className="w-full bg-white text-gray-900 px-4 py-3 rounded-lg font-semibold shadow-md flex items-center justify-center gap-2"
+              title="Open filters and search"
             >
-              <Filter size={20} />
+              <Filter size={20} aria-hidden />
               Filters & Search
             </button>
           </div>
@@ -417,10 +457,12 @@ const ProductsPage = () => {
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-gray-900">Filters</h2>
                     <button
+                      type="button"
                       onClick={() => setShowMobileFilters(false)}
                       className="p-2 hover:bg-gray-100 rounded-lg"
+                      {...a11yAction('Close filters')}
                     >
-                      <X size={24} />
+                      <X size={24} aria-hidden />
                     </button>
                   </div>
 
@@ -513,15 +555,19 @@ const ProductsPage = () => {
                   <div className="space-y-3">
                     {(searchQuery || selectedBrand || selectedYear || selectedMake || selectedModel) && (
                       <button
+                        type="button"
                         onClick={clearFilters}
                         className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-sm"
+                        title="Clear all filters"
                       >
                         Clear All Filters
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => setShowMobileFilters(false)}
                       className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-3 rounded-lg font-semibold"
+                      title={`Apply filters and show ${filteredProducts.length} products`}
                     >
                       Show {filteredProducts.length} Results
                     </button>
@@ -550,32 +596,52 @@ const ProductsPage = () => {
                   {selectedBrand && (
                     <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
                       {selectedBrand}
-                      <button onClick={() => setSelectedBrand('')} className="hover:text-blue-900">
-                        <X size={14} />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBrand('')}
+                        className="hover:text-blue-900"
+                        {...a11yAction(`Remove filter: ${selectedBrand}`)}
+                      >
+                        <X size={14} aria-hidden />
                       </button>
                     </span>
                   )}
                   {selectedYear && (
                     <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
                       {selectedYear}
-                      <button onClick={() => setSelectedYear('')} className="hover:text-blue-900">
-                        <X size={14} />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedYear('')}
+                        className="hover:text-blue-900"
+                        {...a11yAction(`Remove filter: year ${selectedYear}`)}
+                      >
+                        <X size={14} aria-hidden />
                       </button>
                     </span>
                   )}
                   {selectedMake && (
                     <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
                       {selectedMake}
-                      <button onClick={() => setSelectedMake('')} className="hover:text-blue-900">
-                        <X size={14} />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMake('')}
+                        className="hover:text-blue-900"
+                        {...a11yAction(`Remove filter: make ${selectedMake}`)}
+                      >
+                        <X size={14} aria-hidden />
                       </button>
                     </span>
                   )}
                   {selectedModel && (
                     <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
                       {selectedModel}
-                      <button onClick={() => setSelectedModel('')} className="hover:text-blue-900">
-                        <X size={14} />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedModel('')}
+                        className="hover:text-blue-900"
+                        {...a11yAction(`Remove filter: model ${selectedModel}`)}
+                      >
+                        <X size={14} aria-hidden />
                       </button>
                     </span>
                   )}
@@ -609,13 +675,34 @@ const ProductsPage = () => {
             animate={{ opacity: 1 }}
             className="text-center py-16"
           >
-            <p className="text-gray-600 text-lg mb-4">No products match your search criteria.</p>
-            <button
-              onClick={clearFilters}
-              className="text-blue-600 hover:text-blue-700 font-semibold underline"
-            >
-              Clear filters to see all products
-            </button>
+            {categoryProducts.length === 0 ? (
+              <>
+                <p className="text-gray-900 text-2xl font-bold mb-3">Products coming soon</p>
+                <p className="text-gray-600 text-lg mb-6">
+                  We&apos;ve created this collection and will add products here as inventory is published.
+                </p>
+                {parentCategory ? (
+                  <Link
+                    to={`/category/${parentCategory.slug}`}
+                    className="text-blue-600 hover:text-blue-700 font-semibold underline"
+                  >
+                    Back to {parentCategory.name}
+                  </Link>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <p className="text-gray-600 text-lg mb-4">No products match your search criteria.</p>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="text-blue-600 hover:text-blue-700 font-semibold underline"
+                  title="Clear filters to see all products"
+                >
+                  Clear filters to see all products
+                </button>
+              </>
+            )}
           </motion.div>
         )}
       </div>

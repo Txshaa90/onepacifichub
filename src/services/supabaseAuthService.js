@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { getEmailConfirmationRedirectUrl, getOAuthCallbackUrl } from '../lib/siteUrl'
 
 // Login with Supabase
 export const loginWithSupabase = async (email, password) => {
@@ -27,6 +28,14 @@ const mapSupabaseUser = (u) => ({
   email: u.email,
   firstName: u.user_metadata?.firstName || u.user_metadata?.full_name?.split?.(' ')?.[0] || '',
   lastName: u.user_metadata?.lastName || '',
+  phone: u.user_metadata?.phone || '',
+  address: u.user_metadata?.address || '',
+  city: u.user_metadata?.city || '',
+  state: u.user_metadata?.state || '',
+  zipCode: u.user_metadata?.zipCode || '',
+  marketingEmails: u.user_metadata?.marketingEmails ?? true,
+  orderUpdates: u.user_metadata?.orderUpdates ?? true,
+  smsAlerts: u.user_metadata?.smsAlerts ?? false,
   avatarUrl: u.user_metadata?.avatar_url || u.user_metadata?.picture || ''
 })
 
@@ -39,7 +48,11 @@ export const signInWithGoogle = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/`
+      redirectTo: getOAuthCallbackUrl(),
+      // Always show Google’s account picker instead of silently reusing the browser’s session.
+      queryParams: {
+        prompt: 'select_account'
+      }
     }
   })
 
@@ -56,24 +69,7 @@ export const signInWithFacebook = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'facebook',
     options: {
-      redirectTo: `${window.location.origin}/`
-    }
-  })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-}
-
-export const signInWithTwitter = async () => {
-  if (!isSupabaseConfigured()) {
-    throw new Error('Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file')
-  }
-
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'twitter',
-    options: {
-      redirectTo: `${window.location.origin}/`
+      redirectTo: getOAuthCallbackUrl()
     }
   })
 
@@ -94,6 +90,7 @@ export const registerWithSupabase = async (userData) => {
     email,
     password,
     options: {
+      emailRedirectTo: getEmailConfirmationRedirectUrl(),
       data: {
         firstName,
         lastName
@@ -106,13 +103,38 @@ export const registerWithSupabase = async (userData) => {
   }
 
   if (!data.session) {
-    throw new Error('Please check your email to verify your account')
+    return {
+      needsVerification: true,
+      email: email.trim()
+    }
   }
 
   return {
+    needsVerification: false,
     token: data.session.access_token,
     user: mapSupabaseUser(data.user)
   }
+}
+
+export const resendSignupConfirmationEmail = async (email) => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured')
+  }
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: email.trim(),
+    options: {
+      emailRedirectTo: getEmailConfirmationRedirectUrl()
+    }
+  })
+
+  if (error) {
+    console.error('[Supabase] resend signup email failed:', error.message)
+    throw new Error(error.message)
+  }
+
+  return { success: true, message: 'Verification email sent.' }
 }
 
 // Logout with Supabase
@@ -148,6 +170,69 @@ export const getSupabaseSession = async () => {
   }
 }
 
+export const updateSupabaseProfile = async (updates) => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured')
+  }
+
+  const {
+    firstName = '',
+    lastName = '',
+    email,
+    phone = '',
+    address = '',
+    city = '',
+    state = '',
+    zipCode = '',
+    marketingEmails = true,
+    orderUpdates = true,
+    smsAlerts = false
+  } = updates
+
+  const {
+    data: { user: currentUser },
+    error: currentUserError
+  } = await supabase.auth.getUser()
+
+  if (currentUserError || !currentUser) {
+    throw new Error(currentUserError?.message || 'User not found')
+  }
+
+  const metadata = {
+    ...currentUser.user_metadata,
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    full_name: `${firstName} ${lastName}`.trim(),
+    phone: phone.trim(),
+    address: address.trim(),
+    city: city.trim(),
+    state: state.trim(),
+    zipCode: zipCode.trim(),
+    marketingEmails: Boolean(marketingEmails),
+    orderUpdates: Boolean(orderUpdates),
+    smsAlerts: Boolean(smsAlerts)
+  }
+
+  const payload = { data: metadata }
+  const normalizedEmail = email?.trim().toLowerCase()
+  const currentEmail = currentUser.email?.trim().toLowerCase()
+
+  if (normalizedEmail && normalizedEmail !== currentEmail) {
+    payload.email = normalizedEmail
+  }
+
+  const { data, error } = await supabase.auth.updateUser(payload)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return {
+    user: mapSupabaseUser(data.user || currentUser),
+    emailChangeRequested: Boolean(payload.email)
+  }
+}
+
 // Verify token with Supabase
 export const verifySupabaseToken = async (token) => {
   if (!isSupabaseConfigured()) {
@@ -171,52 +256,14 @@ export const verifySupabaseToken = async (token) => {
   }
 }
 
-// Request password reset
-export const requestPasswordResetSupabase = async (email) => {
-  if (!isSupabaseConfigured()) {
-    throw new Error('Supabase is not configured')
-  }
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`
-  })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  return {
-    success: true,
-    message: 'Password reset email sent. Please check your inbox.'
-  }
-}
-
-// Update password
-export const updatePasswordSupabase = async (newPassword) => {
-  if (!isSupabaseConfigured()) {
-    throw new Error('Supabase is not configured')
-  }
-
-  const { error } = await supabase.auth.updateUser({
-    password: newPassword
-  })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  return { success: true }
-}
-
 export default {
   loginWithSupabase,
   registerWithSupabase,
+  resendSignupConfirmationEmail,
   logoutWithSupabase,
   getSupabaseSession,
+  updateSupabaseProfile,
   verifySupabaseToken,
-  requestPasswordResetSupabase,
-  updatePasswordSupabase,
   signInWithGoogle,
-  signInWithFacebook,
-  signInWithTwitter
+  signInWithFacebook
 }

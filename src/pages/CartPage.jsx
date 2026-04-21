@@ -2,9 +2,13 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
 import { useCart } from '../context/CartContext'
+import { a11yAction } from '../lib/controlHints'
 
 const CartPage = () => {
   const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, checkoutUrl, currencyCode } = useCart()
+  const currency = currencyCode || 'USD'
+  const fmt = (amount) =>
+    new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount)
 
   if (cartItems.length === 0) {
     return (
@@ -20,14 +24,12 @@ const CartPage = () => {
             <p className="text-xl text-gray-600 mb-8">
               Add some products to get started!
             </p>
-            <Link to="/">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all"
-              >
-                Continue Shopping
-              </motion.button>
+            <Link
+              to="/"
+              className="inline-flex bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all motion-safe:hover:scale-105 motion-safe:active:scale-95"
+              title="Continue shopping"
+            >
+              Continue Shopping
             </Link>
           </motion.div>
         </div>
@@ -55,8 +57,10 @@ const CartPage = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-4xl font-bold text-gray-900">Shopping Cart</h1>
             <button
+              type="button"
               onClick={clearCart}
               className="text-red-600 hover:text-red-700 font-semibold text-sm underline"
+              title="Remove all items from cart"
             >
               Clear Cart
             </button>
@@ -93,10 +97,12 @@ const CartPage = () => {
                       </div>
                       {/* Remove Button - Mobile Top Right */}
                       <button
+                        type="button"
                         onClick={() => removeFromCart(item.lineId)}
                         className="text-red-500 hover:text-red-700 transition-colors sm:hidden"
+                        {...a11yAction(`Remove ${item.productTitle} from cart`)}
                       >
-                        <Trash2 size={20} />
+                        <Trash2 size={20} aria-hidden />
                       </button>
                     </div>
                     
@@ -104,40 +110,44 @@ const CartPage = () => {
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-3">
                         <button
+                          type="button"
                           onClick={() => updateQuantity(item.lineId, item.quantity - 1)}
                           className="w-10 h-10 rounded-lg bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                          {...a11yAction(`Decrease quantity of ${item.productTitle}`)}
                         >
-                          <Minus size={16} />
+                          <Minus size={16} aria-hidden />
                         </button>
                         <span className="text-lg font-bold w-8 text-center">
                           {item.quantity}
                         </span>
                         <button
+                          type="button"
                           onClick={() => updateQuantity(item.lineId, item.quantity + 1)}
                           className="w-10 h-10 rounded-lg bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                          {...a11yAction(`Increase quantity of ${item.productTitle}`)}
                         >
-                          <Plus size={16} />
+                          <Plus size={16} aria-hidden />
                         </button>
                       </div>
 
                       {/* Price */}
                       <div className="text-left sm:text-right">
                         <p className="text-2xl font-bold text-blue-600">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {fmt(item.price * item.quantity)}
                         </p>
-                        <p className="text-sm text-gray-500">
-                          ${item.price.toFixed(2)} each
-                        </p>
+                        <p className="text-sm text-gray-500">{fmt(item.price)} each</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Remove Button - Desktop */}
                   <button
-                        onClick={() => removeFromCart(item.lineId)}
+                    type="button"
+                    onClick={() => removeFromCart(item.lineId)}
                     className="hidden sm:block text-red-500 hover:text-red-700 transition-colors"
+                    {...a11yAction(`Remove ${item.productTitle} from cart`)}
                   >
-                    <Trash2 size={24} />
+                    <Trash2 size={24} aria-hidden />
                   </button>
                 </div>
               </motion.div>
@@ -156,59 +166,52 @@ const CartPage = () => {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                      <span className="font-semibold">
-                        {currencyCode === 'USD' ? '$' : ''}
-                        {getCartTotal().toFixed(2)}
-                      </span>
+                  <span className="font-semibold">{fmt(getCartTotal())}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  <span className="font-semibold">FREE</span>
+                  <span className="font-semibold">Calculated at checkout</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Tax</span>
-                      <span className="font-semibold">
-                        {currencyCode === 'USD' ? '$' : ''}
-                        {currencyCode === 'USD' ? '$' : ''}
-                        {currencyCode === 'USD' ? '0.00' : '0.00'}
-                      </span>
+                  <span className="font-semibold">{fmt(0)}</span>
                 </div>
+                <p className="text-xs text-gray-500">Final tax and shipping are set on Shopify checkout.</p>
                 <div className="border-t pt-4">
                   <div className="flex justify-between text-xl font-bold text-gray-900">
                     <span>Total</span>
-                    <span className="text-blue-600">
-                          {currencyCode === 'USD' ? '$' : ''}
-                          {getCartTotal().toFixed(2)}
-                    </span>
+                    <span className="text-blue-600">{fmt(getCartTotal())}</span>
                   </div>
                 </div>
               </div>
 
               {checkoutUrl ? (
-                <a href={checkoutUrl} className="block">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all mb-4"
-                  >
-                    Proceed to Checkout
-                  </motion.button>
+                <a
+                  href={checkoutUrl}
+                  className="block w-full text-center bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all mb-4 motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]"
+                  title="Proceed to secure checkout"
+                >
+                  Proceed to Checkout
                 </a>
               ) : (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
+                  type="button"
                   disabled
-                  className="w-full bg-gray-200 text-gray-600 py-4 rounded-xl font-bold text-lg shadow-xl transition-all mb-4"
+                  aria-busy="true"
+                  aria-label="Loading checkout"
+                  title="Loading checkout"
+                  className="w-full bg-gray-200 text-gray-600 py-4 rounded-xl font-bold text-lg shadow-xl transition-all mb-4 cursor-wait"
                 >
                   Loading Checkout...
-                </motion.button>
+                </button>
               )}
 
-              <Link to="/">
-                <button className="w-full border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-bold hover:border-blue-500 hover:text-blue-600 transition-all">
-                  Continue Shopping
-                </button>
+              <Link
+                to="/"
+                className="block w-full text-center border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-bold hover:border-blue-500 hover:text-blue-600 transition-all"
+                title="Continue shopping"
+              >
+                Continue Shopping
               </Link>
             </div>
           </motion.div>

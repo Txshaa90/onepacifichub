@@ -1,18 +1,15 @@
 import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
 
 const Hero = () => {
-  const navigate = useNavigate()
-  
-  const scrollToAbout = () => {
-    const aboutSection = document.getElementById('about-section')
-    if (aboutSection) {
-      aboutSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const scrollToSection = (id) => {
+    const section = document.getElementById(id)
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50">
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-24 md:pt-32">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
@@ -20,7 +17,7 @@ const Hero = () => {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[calc(100vh-160px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[calc(100vh-220px)]">
           {/* Left side - Text content */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -57,7 +54,7 @@ const Hero = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              Discover premium hubcaps, wheel skins, and accessories. Quality products at unbeatable prices with fast shipping.
+              Browse wheel covers and restyling accessories through a cleaner category-first shopping flow built for faster product discovery.
             </motion.p>
 
             <motion.div
@@ -67,15 +64,19 @@ const Hero = () => {
               className="flex flex-col sm:flex-row gap-4"
             >
               <motion.button
-                onClick={() => navigate('/products/hubcaps')}
+                type="button"
+                onClick={() => scrollToSection('upgrade-product-cards')}
+                title="Explore our products"
                 className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-10 py-5 rounded-xl font-bold text-lg shadow-2xl hover:shadow-blue-500/50 transition-all"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Shop by Category
+                Explore Our Products
               </motion.button>
               <motion.button
-                onClick={scrollToAbout}
+                type="button"
+                onClick={() => scrollToSection('upgrade-your-ride')}
+                title="Scroll to about section"
                 className="bg-white text-gray-900 border-2 border-gray-300 px-10 py-5 rounded-xl font-bold text-lg shadow-lg hover:border-blue-500 hover:text-blue-600 transition-all"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}

@@ -268,11 +268,9 @@ console.log(user.firstName, user.lastName, user.email)
 3. Customize HTML template
 4. Use variables: `{{ .ConfirmationURL }}`, `{{ .SiteURL }}`
 
-### 2. Password Reset Email
+### 2. Password reset (OTP flow)
 
-1. Click **"Reset password"**
-2. Customize template
-3. Set redirect URL to: `https://onepacifichub.com/reset-password`
+The app uses **custom Edge Functions** (`send-reset-otp`, `verify-reset-otp`, `reset-password`), not Supabase’s magic-link reset. Configure and deploy those functions; optional Supabase **“Reset password”** email template is unused for this flow.
 
 ---
 

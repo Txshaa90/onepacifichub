@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import * as authService from '../services/authService'
 import * as supabaseAuthService from '../services/supabaseAuthService'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { AUTH_STORAGE_MODE_KEY, setAuthStoragePersistence, setAuthTokenMirror } from '../lib/authStorage'
+import { stripSupabaseAuthFromUrl } from '../lib/authUrl'
 
 const AuthContext = createContext()
 
@@ -18,48 +20,42 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Load user from token on mount
+  // Single subscription: session from storage + email/OAuth/recovery callbacks in URL
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (!isSupabaseConfigured()) {
-          console.warn('Supabase not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env')
-          setLoading(false)
-          return
-        }
+    if (!isSupabaseConfigured() || !supabase) {
+      setLoading(false)
+      return
+    }
 
-        // Get Supabase session
-        const session = await supabaseAuthService.getSupabaseSession()
+    const applySession = async (session) => {
+      try {
         if (session) {
-          localStorage.setItem('authToken', session.token)
-          setUser(session.user)
+          const mapped = await supabaseAuthService.getSupabaseSession()
+          if (mapped) {
+            setAuthTokenMirror(mapped.token)
+            setUser(mapped.user)
+          }
+        } else {
+          setAuthTokenMirror(null)
+          setUser(null)
         }
       } catch (err) {
-        console.error('Auth initialization error:', err)
-        localStorage.removeItem('authToken')
+        console.error('Auth session sync error:', err)
+        setAuthTokenMirror(null)
+        setUser(null)
       } finally {
-        setLoading(false)
+        stripSupabaseAuthFromUrl()
       }
     }
-    
-    initAuth()
-  }, [])
 
-  // Keep user in sync after Google OAuth redirect and other session changes
-  useEffect(() => {
-    if (!isSupabaseConfigured() || !supabase) return
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      void applySession(session)
+      setLoading(false)
+    })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const mapped = await supabaseAuthService.getSupabaseSession()
-        if (mapped) {
-          localStorage.setItem('authToken', mapped.token)
-          setUser(mapped.user)
-        }
-      } else {
-        localStorage.removeItem('authToken')
-        setUser(null)
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      void applySession(session)
+      setLoading(false)
     })
 
     return () => subscription.unsubscribe()
@@ -74,10 +70,13 @@ export const AuthProvider = ({ children }) => {
       if (!isSupabaseConfigured()) {
         throw new Error('Authentication not configured. Please contact support.')
       }
-      
+
+      await supabase.auth.signOut()
+      setAuthStoragePersistence(rememberMe)
+
       const { token, user } = await supabaseAuthService.loginWithSupabase(email, password)
-      
-      localStorage.setItem('authToken', token)
+
+      setAuthTokenMirror(token)
       setUser(user)
       
       return { success: true }
@@ -99,12 +98,19 @@ export const AuthProvider = ({ children }) => {
       if (!isSupabaseConfigured()) {
         throw new Error('Authentication not configured. Please contact support.')
       }
-      
-      const { token, user } = await supabaseAuthService.registerWithSupabase(userData)
-      
-      localStorage.setItem('authToken', token)
-      setUser(user)
-      
+
+      await supabase.auth.signOut()
+      setAuthStoragePersistence(true)
+
+      const result = await supabaseAuthService.registerWithSupabase(userData)
+
+      if (result.needsVerification) {
+        return { success: true, needsVerification: true, email: result.email }
+      }
+
+      setAuthTokenMirror(result.token)
+      setUser(result.user)
+
       return { success: true }
     } catch (err) {
       const errorMessage = err.message || 'Registration failed'
@@ -115,12 +121,13 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (rememberMe = false) => {
     try {
       setError(null)
       if (!isSupabaseConfigured()) {
         throw new Error('Authentication not configured. Please contact support.')
       }
+      setAuthStoragePersistence(rememberMe)
       await supabaseAuthService.signInWithGoogle()
       return { success: true }
     } catch (err) {
@@ -130,31 +137,17 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const loginWithFacebook = async () => {
+  const loginWithFacebook = async (rememberMe = false) => {
     try {
       setError(null)
       if (!isSupabaseConfigured()) {
         throw new Error('Authentication not configured. Please contact support.')
       }
+      setAuthStoragePersistence(rememberMe)
       await supabaseAuthService.signInWithFacebook()
       return { success: true }
     } catch (err) {
       const errorMessage = err.message || 'Facebook sign-in failed'
-      setError(errorMessage)
-      return { success: false, error: errorMessage }
-    }
-  }
-
-  const loginWithTwitter = async () => {
-    try {
-      setError(null)
-      if (!isSupabaseConfigured()) {
-        throw new Error('Authentication not configured. Please contact support.')
-      }
-      await supabaseAuthService.signInWithTwitter()
-      return { success: true }
-    } catch (err) {
-      const errorMessage = err.message || 'X / Twitter sign-in failed'
       setError(errorMessage)
       return { success: false, error: errorMessage }
     }
@@ -166,16 +159,42 @@ export const AuthProvider = ({ children }) => {
       if (isSupabaseConfigured()) {
         await supabaseAuthService.logoutWithSupabase()
       }
-      
-      localStorage.removeItem('authToken')
+
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(AUTH_STORAGE_MODE_KEY)
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(AUTH_STORAGE_MODE_KEY)
+      }
+      setAuthTokenMirror(null)
       setUser(null)
       setError(null)
     } catch (err) {
       console.error('Logout error:', err)
-      // Still clear local state even if Supabase logout fails
-      localStorage.removeItem('authToken')
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(AUTH_STORAGE_MODE_KEY)
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(AUTH_STORAGE_MODE_KEY)
+      }
+      setAuthTokenMirror(null)
       setUser(null)
       setError(null)
+    }
+  }
+
+  const resendVerificationEmail = async (email) => {
+    try {
+      setError(null)
+      if (!isSupabaseConfigured()) {
+        throw new Error('Authentication not configured. Please contact support.')
+      }
+      await supabaseAuthService.resendSignupConfirmationEmail(email)
+      return { success: true }
+    } catch (err) {
+      const errorMessage = err.message || 'Could not resend email'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
     }
   }
 
@@ -185,10 +204,15 @@ export const AuthProvider = ({ children }) => {
       setLoading(true)
       setError(null)
       
-      const { user: updatedUser } = await authService.updateProfile(user.id, updates)
+      const { user: updatedUser, emailChangeRequested } = await supabaseAuthService.updateSupabaseProfile(updates)
       setUser(updatedUser)
       
-      return { success: true }
+      return {
+        success: true,
+        message: emailChangeRequested
+          ? 'Profile saved. Check your inbox to confirm the new email address.'
+          : 'Profile saved successfully.'
+      }
     } catch (err) {
       const errorMessage = err.message || 'Profile update failed'
       setError(errorMessage)
@@ -216,28 +240,6 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Request password reset - Uses Supabase
-  const requestPasswordReset = async (email) => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      if (!isSupabaseConfigured()) {
-        throw new Error('Authentication not configured. Please contact support.')
-      }
-      
-      const result = await supabaseAuthService.requestPasswordResetSupabase(email)
-      
-      return { success: true, message: result.message }
-    } catch (err) {
-      const errorMessage = err.message || 'Password reset request failed'
-      setError(errorMessage)
-      return { success: false, error: errorMessage }
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const value = {
     user,
     loading,
@@ -245,12 +247,11 @@ export const AuthProvider = ({ children }) => {
     login,
     loginWithGoogle,
     loginWithFacebook,
-    loginWithTwitter,
     register,
     logout,
     updateProfile,
     changePassword,
-    requestPasswordReset,
+    resendVerificationEmail,
     isAuthenticated: !!user,
     clearError: () => setError(null)
   }

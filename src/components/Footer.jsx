@@ -1,148 +1,279 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Facebook, Instagram, Mail, Phone } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Facebook, Instagram, Mail, Phone, Loader2 } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import Logo from './Logo'
+import { useAuth } from '../context/AuthContext'
 
 const Footer = () => {
-  const footerLinks = {
-    menu: [
-      { name: 'Hub caps', href: '/products/hubcaps' },
-      { name: 'Wheelskins', href: '/products/wheelskins' },
-      { name: 'Wheel Simulator', href: '/products/wheel-simulator' },
-      { name: 'Trim Rings', href: '/products/trim-rings' },
-    ],
-    customerService: [
-      { name: 'Help Centre', href: '#' },
-      { name: 'Payment', href: '#' },
-      { name: 'Delivery', href: '#' },
-      { name: 'Returns and Refunds', href: '#' },
-    ],
+  const navigate = useNavigate()
+  const { isAuthenticated, logout } = useAuth()
+  const [email, setEmail] = useState('')
+  const [newsletterStatus, setNewsletterStatus] = useState(null)
+  const [newsletterSending, setNewsletterSending] = useState(false)
+
+  const handleNewsletter = (e) => {
+    e.preventDefault()
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email.trim())) {
+      setNewsletterStatus({ type: 'error', message: 'Please enter a valid email.' })
+      return
+    }
+    setNewsletterSending(true)
+    setNewsletterStatus(null)
+    window.setTimeout(() => {
+      setNewsletterSending(false)
+      setNewsletterStatus({ type: 'ok', message: "Thanks — you're on the list." })
+      setEmail('')
+    }, 600)
   }
 
+  const handleLogout = async () => {
+    await logout()
+    navigate('/', { replace: true })
+  }
+
+  const headingClass = 'text-white font-semibold mb-4'
+  const linkClass = 'footer-link text-gray-400 inline-block'
+
   return (
-    <footer className="bg-gray-900 text-gray-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid md:grid-cols-4 gap-12">
-          {/* Brand */}
+    <footer className="bg-[#0b1a2b] text-gray-300 px-6 md:px-16 py-12">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-10">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            className="md:col-span-1 sm:col-span-2 md:col-span-1"
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.45 }}
           >
-            <Logo size="small" />
-            <p className="text-gray-400 mb-6">
-              Your trusted partner for adventure gear and auto upgrades.
+            <Logo size="small" variant="dark" />
+            <p className="text-sm mb-6 mt-4 leading-relaxed text-gray-400">
+              Premium hubcaps, wheel skins, and auto accessories — quality parts with fast shipping.
             </p>
-            <div className="flex gap-4">
-              <motion.a
-                href="https://facebook.com"
+
+            <h4 className={`${headingClass} text-xs tracking-wide uppercase`}>Stay in the loop</h4>
+
+            <form onSubmit={handleNewsletter} className="flex flex-col sm:flex-row gap-2 mb-6">
+              <label htmlFor="footer-newsletter" className="sr-only">
+                Email for newsletter
+              </label>
+              <input
+                id="footer-newsletter"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Your email"
+                className="bg-[#16263d] px-3 py-2.5 rounded-md w-full text-sm text-gray-200 placeholder:text-gray-500 outline-none border border-transparent focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30"
+              />
+              <button
+                type="submit"
+                disabled={newsletterSending}
+                className="bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2.5 rounded-md text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 inline-flex items-center justify-center gap-2 shrink-0"
+              >
+                {newsletterSending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Subscribe
+              </button>
+            </form>
+            {newsletterStatus?.type === 'ok' && (
+              <p className="mb-4 text-sm text-green-400">{newsletterStatus.message}</p>
+            )}
+            {newsletterStatus?.type === 'error' && (
+              <p className="mb-4 text-sm text-red-400">{newsletterStatus.message}</p>
+            )}
+
+            <div className="flex gap-3">
+              <a
+                href="https://www.facebook.com/onepacifichub"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-blue-600 transition-colors"
-                whileHover={{ scale: 1.1, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+                className="w-10 h-10 rounded-full bg-[#16263d] flex items-center justify-center text-gray-300 hover:text-white hover:bg-blue-600 transition-colors"
+                aria-label="Facebook"
               >
                 <Facebook size={20} />
-              </motion.a>
-              <motion.a
-                href="https://instagram.com"
+              </a>
+              <a
+                href="https://www.instagram.com/onepacifichub"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-pink-600 transition-colors"
-                whileHover={{ scale: 1.1, y: -2 }}
-                whileTap={{ scale: 0.95 }}
+                className="w-10 h-10 rounded-full bg-[#16263d] flex items-center justify-center text-gray-300 hover:text-white hover:bg-pink-600 transition-colors"
+                aria-label="Instagram"
               >
                 <Instagram size={20} />
-              </motion.a>
+              </a>
             </div>
           </motion.div>
 
-          {/* Menu */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            transition={{ duration: 0.45, delay: 0.05 }}
           >
-            <h4 className="text-white font-bold mb-4">Menu</h4>
+            <h4 className={headingClass}>Shop</h4>
             <ul className="space-y-2">
-              {footerLinks.menu.map((link) => (
-                <li key={link.name}>
-                  <Link to={link.href}>
-                    <motion.div
-                      className="hover:text-blue-400 transition-colors"
-                      whileHover={{ x: 5 }}
-                    >
-                      {link.name}
-                    </motion.div>
+              <li>
+                <Link to="/products/hubcaps" className={linkClass}>
+                  Hub caps
+                </Link>
+              </li>
+              <li>
+                <Link to="/products/wheelskins" className={linkClass}>
+                  Wheelskins
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="https://onepacifichub.com/collections/wheel-simulators"
+                  className={linkClass}
+                >
+                  Wheel Simulator
+                </a>
+              </li>
+              <li>
+                <Link to="/products/trim-rings" className={linkClass}>
+                  Trim Rings
+                </Link>
+              </li>
+              <li>
+                <Link to="/products" className={linkClass}>
+                  Shop by Category
+                </Link>
+              </li>
+            </ul>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45, delay: 0.1 }}
+          >
+            <h4 className={headingClass}>Customer service</h4>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/help#support" className={linkClass}>
+                  Email support
+                </Link>
+              </li>
+              <li>
+                <Link to="/help#delivery" className={linkClass}>
+                  Delivery
+                </Link>
+              </li>
+              <li>
+                <Link to="/help#returns" className={linkClass}>
+                  Returns & refunds
+                </Link>
+              </li>
+            </ul>
+
+            <h4 className={`${headingClass} mt-6`}>Legal</h4>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/privacy-policy" className={linkClass}>
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className={linkClass}>
+                  Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link to="/refund-policy" className={linkClass}>
+                  Refund Policy
+                </Link>
+              </li>
+            </ul>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45, delay: 0.15 }}
+          >
+            <h4 className={headingClass}>Account</h4>
+            {!isAuthenticated ? (
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/login" className={linkClass}>
+                    Sign in
                   </Link>
                 </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {/* Customer Service */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <h4 className="text-white font-bold mb-4">Customer Service</h4>
-            <ul className="space-y-2">
-              {footerLinks.customerService.map((link) => (
-                <li key={link.name}>
-                  <motion.a
-                    href={link.href}
-                    className="hover:text-blue-400 transition-colors"
-                    whileHover={{ x: 5 }}
-                  >
-                    {link.name}
-                  </motion.a>
+                <li>
+                  <Link to="/register" className={linkClass}>
+                    Create account
+                  </Link>
                 </li>
-              ))}
-            </ul>
+              </ul>
+            ) : (
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/account" className={linkClass}>
+                    My account
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/orders" className={linkClass}>
+                    Orders
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className={`${linkClass} text-left bg-transparent border-0 p-0 font-inherit cursor-pointer`}
+                  >
+                    Log out
+                  </button>
+                </li>
+              </ul>
+            )}
           </motion.div>
 
-          {/* Contact */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.45, delay: 0.2 }}
           >
-            <h4 className="text-white font-bold mb-4">Contact</h4>
-            <div className="space-y-3">
-              <motion.a
-                href="mailto:info@onepacifichub.com"
-                className="flex items-center gap-2 hover:text-blue-400 transition-colors"
-                whileHover={{ x: 5 }}
-              >
-                <Mail size={18} />
-                info@onepacifichub.com
-              </motion.a>
-              <motion.a
-                href="tel:+12132688273"
-                className="flex items-center gap-2 hover:text-blue-400 transition-colors"
-                whileHover={{ x: 5 }}
-              >
-                <Phone size={18} />
-                +1 (213) 268 8273
-              </motion.a>
-            </div>
+            <h4 className={headingClass}>Contact</h4>
+            <p className="text-sm mb-2 font-semibold text-gray-200">Support hours</p>
+            <p className="text-sm mb-4 text-gray-400">Mon–Fri, 9am–6pm (Pacific)</p>
+
+            <a
+              href="mailto:info@onepacifichub.com"
+              className={`${linkClass} inline-flex items-center gap-2 mb-3`}
+            >
+              <Mail size={16} className="text-cyan-400 shrink-0" />
+              info@onepacifichub.com
+            </a>
+
+            <a href="tel:+12132688273" className={`${linkClass} inline-flex items-start gap-2`}>
+              <Phone size={16} className="text-cyan-400 shrink-0 mt-0.5" />
+              <span>
+                US: +1 (213) 268-8273
+                <span className="block text-xs mt-1 text-gray-500">Voicemail & callbacks</span>
+              </span>
+            </a>
           </motion.div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500"
-        >
-          <p>© 2024 onepacifichub. All rights reserved.</p>
-        </motion.div>
+        <div className="border-t border-gray-700 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400 gap-4">
+          <p>© {new Date().getFullYear()} OnePacificHub. All rights reserved.</p>
+          <div className="flex flex-wrap justify-center gap-6">
+            <Link to="/privacy-policy" className="footer-link text-gray-400">
+              Privacy
+            </Link>
+            <Link to="/terms" className="footer-link text-gray-400">
+              Terms
+            </Link>
+            <Link to="/refund-policy" className="footer-link text-gray-400">
+              Refunds
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   )

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { createSupabaseAuthStorage } from './authStorage'
 
 // Supabase configuration
 // Get these values from your Supabase project settings: https://app.supabase.com
@@ -16,7 +17,8 @@ export const supabase = isSupabaseConfigured()
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        storage: createSupabaseAuthStorage()
       }
     })
   : null

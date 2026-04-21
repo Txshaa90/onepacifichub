@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react'
+import { Mail, Lock, User, AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { generateStrongPassword } from '../lib/passwordStrength'
 
 const RegisterPage = () => {
   const navigate = useNavigate()
@@ -18,6 +19,8 @@ const RegisterPage = () => {
   const [touched, setTouched] = useState({})
   const [loading, setLoading] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(0)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -128,6 +131,16 @@ const RegisterPage = () => {
     return 'Strong'
   }
 
+  const applySuggestedPassword = () => {
+    const suggested = generateStrongPassword()
+    setFormData((prev) => ({ ...prev, password: suggested, confirmPassword: suggested }))
+    calculatePasswordStrength(suggested)
+    window.setTimeout(() => {
+      validateField('password', suggested)
+      validateField('confirmPassword', suggested)
+    }, 0)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -155,18 +168,24 @@ const RegisterPage = () => {
     }
 
     const result = await register(formData)
-    
+
+    if (result.success && result.needsVerification) {
+      navigate('/verify-email', { state: { email: result.email } })
+      setLoading(false)
+      return
+    }
+
     if (result.success) {
       navigate('/')
     } else {
-      setErrors(prev => ({ ...prev, submit: result.error }))
+      setErrors((prev) => ({ ...prev, submit: result.error }))
     }
     
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-24 pb-16">
+    <div className="flex-1 w-full min-h-0 flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-24 pb-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -281,24 +300,43 @@ const RegisterPage = () => {
             {/* Password Fields */}
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password *
-                </label>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={applySuggestedPassword}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+                  >
+                    Suggest strong password
+                  </button>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     id="password"
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
+                    autoComplete="new-password"
                     required
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       touched.password && errors.password ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 p-1 rounded"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
                 {touched.password && errors.password && (
                   <p className="mt-1 text-sm text-red-600">{errors.password}</p>
@@ -331,18 +369,28 @@ const RegisterPage = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     id="confirmPassword"
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     onBlur={handleBlur}
+                    autoComplete="new-password"
                     required
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       touched.confirmPassword && errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"
                   />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowConfirmPassword((s) => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 p-1 rounded"
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
                 {touched.confirmPassword && errors.confirmPassword && (
                   <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
@@ -363,7 +411,7 @@ const RegisterPage = () => {
                   Terms & Conditions
                 </Link>{' '}
                 and{' '}
-                <Link to="/privacy" className="text-blue-600 hover:text-blue-700">
+                <Link to="/legal/privacy" className="text-blue-600 hover:text-blue-700">
                   Privacy Policy
                 </Link>
               </label>
@@ -373,11 +421,19 @@ const RegisterPage = () => {
             <motion.button
               type="submit"
               disabled={loading}
+              aria-busy={loading}
+              aria-label={loading ? 'Creating account' : 'Create account'}
+              title={loading ? 'Creating account…' : 'Create account'}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? 'Creating Account...' : (
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Creating account…
+                </>
+              ) : (
                 <>
                   <CheckCircle size={20} />
                   Create Account

@@ -10,21 +10,15 @@ const FacebookGlyph = () => (
   </svg>
 )
 
-const TwitterGlyph = () => (
-  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-)
-
 const GoogleGlyph = () => (
   <span className="text-xl font-bold leading-none">G</span>
 )
 
 /**
- * “Or sign up using” row — circular Facebook, X/Twitter, Google (matches common login-card patterns).
+ * “Or sign up using” row — circular Facebook and Google (matches common login-card patterns).
  */
-const SocialOAuthButtons = ({ showLabel = true, className = '' }) => {
-  const { loginWithGoogle, loginWithFacebook, loginWithTwitter, loading, error, clearError } = useAuth()
+const SocialOAuthButtons = ({ showLabel = true, className = '', rememberMe = false }) => {
+  const { loginWithGoogle, loginWithFacebook, loading, error, clearError } = useAuth()
   const disabled = loading || !isSupabaseConfigured()
 
   return (
@@ -35,12 +29,12 @@ const SocialOAuthButtons = ({ showLabel = true, className = '' }) => {
       <div className="flex items-center justify-center gap-5">
         <button
           type="button"
-          title="Facebook"
+          title="Continue with Facebook"
           aria-label="Continue with Facebook"
           disabled={disabled}
           onClick={() => {
             clearError?.()
-            loginWithFacebook()
+            loginWithFacebook(rememberMe)
           }}
           className={`${circle} bg-[#1877F2] hover:bg-[#166fe5]`}
         >
@@ -48,25 +42,12 @@ const SocialOAuthButtons = ({ showLabel = true, className = '' }) => {
         </button>
         <button
           type="button"
-          title="X (Twitter)"
-          aria-label="Continue with X or Twitter"
-          disabled={disabled}
-          onClick={() => {
-            clearError?.()
-            loginWithTwitter()
-          }}
-          className={`${circle} bg-[#1d9bf0] hover:bg-[#1a8cd8]`}
-        >
-          <TwitterGlyph />
-        </button>
-        <button
-          type="button"
-          title="Google"
+          title="Continue with Google"
           aria-label="Continue with Google"
           disabled={disabled}
           onClick={() => {
             clearError?.()
-            loginWithGoogle()
+            loginWithGoogle(rememberMe)
           }}
           className={`${circle} bg-[#ea4335] hover:bg-[#e33327]`}
         >

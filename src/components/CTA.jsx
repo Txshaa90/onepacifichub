@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion'
 import { useInView } from 'framer-motion'
 import { useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 
 const CTA = () => {
+  const navigate = useNavigate()
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
@@ -61,11 +63,14 @@ const CTA = () => {
           </motion.p>
 
           <motion.button
+            type="button"
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.8, delay: 0.6 }}
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/products/hubcaps')}
+            title="Shop hub caps and products"
             className="bg-white text-blue-600 px-10 py-4 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl transition-shadow inline-flex items-center gap-2 group"
           >
             Shop Now
@@ -73,7 +78,7 @@ const CTA = () => {
               animate={{ x: [0, 5, 0] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
-              <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="group-hover:translate-x-1 transition-transform" aria-hidden />
             </motion.span>
           </motion.button>
         </motion.div>
