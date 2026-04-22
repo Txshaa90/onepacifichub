@@ -249,7 +249,7 @@ const ProductsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 pt-36 md:pt-44 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <Breadcrumb
@@ -579,77 +579,83 @@ const ProductsPage = () => {
 
           {/* Main Content - Products */}
           <div className="flex-1">
-            {/* Results Header */}
-            <div className="bg-white rounded-xl shadow-md p-4 mb-6">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Showing {startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length}
-                  </p>
-                </div>
-                
-                {/* Active Filter Tags */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {selectedBrand && (
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
-                      {selectedBrand}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedBrand('')}
-                        className="hover:text-blue-900"
-                        {...a11yAction(`Remove filter: ${selectedBrand}`)}
-                      >
-                        <X size={14} aria-hidden />
-                      </button>
-                    </span>
-                  )}
-                  {selectedYear && (
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
-                      {selectedYear}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedYear('')}
-                        className="hover:text-blue-900"
-                        {...a11yAction(`Remove filter: year ${selectedYear}`)}
-                      >
-                        <X size={14} aria-hidden />
-                      </button>
-                    </span>
-                  )}
-                  {selectedMake && (
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
-                      {selectedMake}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedMake('')}
-                        className="hover:text-blue-900"
-                        {...a11yAction(`Remove filter: make ${selectedMake}`)}
-                      >
-                        <X size={14} aria-hidden />
-                      </button>
-                    </span>
-                  )}
-                  {selectedModel && (
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
-                      {selectedModel}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedModel('')}
-                        className="hover:text-blue-900"
-                        {...a11yAction(`Remove filter: model ${selectedModel}`)}
-                      >
-                        <X size={14} aria-hidden />
-                      </button>
-                    </span>
-                  )}
-                </div>
-              </div>
+        {/* Results Header */}
+        <div className="bg-white rounded-xl shadow-md p-4 mb-6 border-l-4 border-blue-600">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <p className="text-xl font-bold text-gray-900">
+                {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Available
+              </p>
+              <p className="text-sm text-gray-600">
+                Premium {categoryInfo.name} for your vehicle
+              </p>
             </div>
-
-            {/* Products Grid */}
+            
+            {/* Active Filter Tags */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {(selectedBrand || selectedYear || selectedMake || selectedModel) && (
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-blue-600 hover:underline font-semibold mr-2"
+                >
+                  Clear All
+                </button>
+              )}
+              {selectedBrand && (
+                 <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-sm font-medium flex items-center gap-1">
+                   {selectedBrand}
+                   <button
+                     type="button"
+                     onClick={() => setSelectedBrand('')}
+                     className="hover:text-blue-900"
+                     {...a11yAction(`Remove filter: ${selectedBrand}`)}
+                   >
+                     <X size={14} aria-hidden />
+                   </button>
+                 </span>
+               )}
+               {selectedYear && (
+                 <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-sm font-medium flex items-center gap-1">
+                   {selectedYear}
+                   <button
+                     type="button"
+                     onClick={() => setSelectedYear('')}
+                     className="hover:text-blue-900"
+                     {...a11yAction(`Remove filter: year ${selectedYear}`)}
+                   >
+                     <X size={14} aria-hidden />
+                   </button>
+                 </span>
+               )}
+               {selectedMake && (
+                 <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-sm font-medium flex items-center gap-1">
+                   {selectedMake}
+                   <button
+                     type="button"
+                     onClick={() => setSelectedMake('')}
+                     className="hover:text-blue-900"
+                     {...a11yAction(`Remove filter: make ${selectedMake}`)}
+                   >
+                     <X size={14} aria-hidden />
+                   </button>
+                 </span>
+               )}
+               {selectedModel && (
+                 <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-sm font-medium flex items-center gap-1">
+                   {selectedModel}
+                   <button
+                     type="button"
+                     onClick={() => setSelectedModel('')}
+                     className="hover:text-blue-900"
+                     {...a11yAction(`Remove filter: model ${selectedModel}`)}
+                   >
+                     <X size={14} aria-hidden />
+                   </button>
+                 </span>
+               )}
+             </div>
+           </div>
+         </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedProducts.map((product, index) => (
                 <ProductCard key={product.id} product={product} index={index} />

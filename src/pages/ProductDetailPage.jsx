@@ -1,170 +1,18 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ShoppingCart, Star, Check, Minus, Plus, Package, Palette, Building2, Wrench, ChevronLeft, ChevronRight } from 'lucide-react'
-import { categories } from '../data/categories'
+import { ArrowLeft, ShoppingCart, Star, Check, Minus, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { categories, findMainCategoryBySlug } from '../data/categories'
 import { getLocalProductByCategoryAndId, getLocalProductsByCategorySlug } from '../data/catalog'
 import { useCart } from '../context/CartContext'
 import { fetchCollectionProducts, fetchProductByHandle, isShopifyConfigured } from '../lib/shopifyStorefront'
 import Breadcrumb from '../components/Breadcrumb'
 import StarRating from '../components/StarRating'
 import ImageZoom from '../components/ImageZoom'
+import ProductSpecs from '../components/ProductSpecs'
+import FitmentTable from '../components/FitmentTable'
+import ProductNotes from '../components/ProductNotes'
 import { useState, useMemo, useEffect, useLayoutEffect } from 'react'
 import { a11yAction } from '../lib/controlHints'
-
-const decodeEntities = (text) => (
-  text
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-)
-
-const splitLongDescriptionBlock = (block) => {
-  const markers = [
-    'Attention!',
-    'ATTENTION:',
-    'These are',
-    'These Wheel Covers',
-    'Compatible with:',
-    'Use Amazon',
-    'For ',
-    'Factory ',
-    'Stylish ',
-    'Important:'
-  ]
-
-  let next = block
-  markers.forEach((marker) => {
-    // Split before the marker if there's a space or if it's at the start of a line/block
-    const pattern = new RegExp(`(?:\\s+|^)(?=${marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g')
-    next = next.replace(pattern, '\n')
-  })
-
-  return next
-    .split(/\n+/)
-    .map((part) => part.trim())
-    .filter(Boolean)
-}
-
-const collapseDuplicateDescriptionBlocks = (blocks) => {
-  // 1. Remove consecutive exact duplicates
-  let deduped = blocks.filter((block, index) => index === 0 || block !== blocks[index - 1])
-  
-  // 2. Filter out "junk" blocks that are just a single dot or non-alphanumeric junk
-  deduped = deduped.filter(block => {
-    const cleaned = block.replace(/[.\-\s]/g, '')
-    return cleaned.length > 0
-  })
-
-  // 3. Check for the "perfect half" duplication
-  const half = Math.floor(deduped.length / 2)
-  if (half >= 2) {
-    const firstHalf = deduped.slice(0, half)
-    const secondHalf = deduped.slice(deduped.length - half)
-    if (firstHalf.join('||') === secondHalf.join('||')) {
-      return deduped.slice(0, deduped.length - half)
-    }
-  }
-
-  // 4. More aggressive check: if the first few blocks repeat later
-  if (deduped.length >= 4) {
-    for (let i = 2; i <= Math.floor(deduped.length / 2); i++) {
-      const pattern = deduped.slice(0, i).join('||')
-      const remaining = deduped.slice(i).join('||')
-      if (remaining.includes(pattern)) {
-        // We found a repeat. This is tricky because we don't want to cut off 
-        // legitimate info. But if the repeat starts with "Attention!" or "These are",
-        // it's likely a duplicate block.
-        const firstBlock = deduped[0].toLowerCase()
-        if (firstBlock.includes('attention') || firstBlock.includes('these are')) {
-           // Return only the first occurrence of the repeating sequence
-           return deduped.slice(0, i)
-        }
-      }
-    }
-  }
-
-  return deduped
-}
-
-const stripListMarker = (block) => (
-  block
-    .replace(/^(?:[-*]\s+|â€¢\s*|âœ“\s*)/, '')
-    .trim()
-)
-
-const isCompatibilityLine = (block) => {
-  const cleaned = cleanDescriptionMarker(block).toLowerCase()
-  if (cleaned.startsWith('compatible with:')) return true
-  const normalized = block.replace(/^[•✓]\s*/, '').trim().toLowerCase()
-  return normalized.startsWith('compatible with:')
-}
-
-const isLeadHighlightLine = (block) => {
-  const normalized = block.trim()
-  const lower = normalized.toLowerCase()
-  if (normalized.length <= 220 && lower.includes('only compatible')) return true
-  return (
-    normalized.length <= 180 &&
-    (lower.startsWith('these ') ||
-      lower.startsWith('attention') ||
-      lower.startsWith('important:') ||
-      lower.startsWith('note:'))
-  )
-}
-
-const cleanDescriptionMarker = (block) => (
-  block
-    .replace(/^(?:[-*]\s+|\u2022\s*|\u2713\s*|â€¢\s*|âœ“\s*)/, '')
-    .trim()
-)
-
-const shouldRenderAsCheckLine = (block) => {
-  const normalized = cleanDescriptionMarker(block).toLowerCase()
-  return (
-    /^(?:[-*]\s+|\u2022\s*|\u2713\s*|â€¢\s*|âœ“\s*)/.test(block) ||
-    normalized.startsWith('compatible with:')
-  )
-}
-
-const shouldRenderAsLeadLine = (block, index) => {
-  const normalized = block.trim()
-  return (
-    normalized.length <= 220 &&
-    (normalized.startsWith('These ') ||
-      normalized.startsWith('Attention!') ||
-      normalized.startsWith('Important:') ||
-      normalized.includes('ONLY compatible') ||
-      (index === 0 && !shouldRenderAsCheckLine(normalized) && normalized.length <= 180))
-  )
-}
-
-const extractDescriptionBlocks = (product) => {
-  const source = product?.descriptionHtml || product?.description || ''
-  if (!source) return []
-
-  const blocks = decodeEntities(
-    source
-      .replace(/\r/g, '')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/(p|div|h[1-6]|li|ul|ol)>/gi, '\n')
-      .replace(/<li[^>]*>/gi, '\n• ')
-      .replace(/<[^>]+>/g, ' ')
-  )
-    .split(/\n+/)
-    .flatMap((block) => splitLongDescriptionBlock(block))
-    .map((block) => {
-      let cleaned = block.replace(/\s+/g, ' ').trim()
-      // Professional cleanup: Replace Amazon references with site-appropriate terms
-      cleaned = cleaned.replace(/Amazon(?:'s)? fitment tool/gi, 'our fitment guide')
-      return cleaned
-    })
-    .filter(Boolean)
-
-  return collapseDuplicateDescriptionBlocks(blocks)
-}
 
 const ProductDetailPage = () => {
   const { category, productId } = useParams()
@@ -178,6 +26,7 @@ const ProductDetailPage = () => {
 
   // Find the category info
   const categoryInfo = categories.find(cat => cat.slug === category)
+  const parentCategory = categoryInfo ? findMainCategoryBySlug(categoryInfo.parentSlug) : null
 
   const [product, setProduct] = useState(null)
   const [categoryProducts, setCategoryProducts] = useState([])
@@ -243,8 +92,6 @@ const ProductDetailPage = () => {
     return product.image ? [product.image] : []
   }, [product])
 
-  const descriptionBlocks = useMemo(() => extractDescriptionBlocks(product), [product])
-
   const handleTouchStart = (e) => {
     setTouchStart(e.targetTouches[0].clientX)
   }
@@ -269,50 +116,6 @@ const ProductDetailPage = () => {
   const prevImage = () => {
     setSelectedImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length)
   }
-
-  // Extract product specifications from name and description
-  const specifications = useMemo(() => {
-    if (!product) return {}
-    
-    const specs = {
-      dimensions: '',
-      color: '',
-      brand: '',
-      installationType: 'Easy Installation'
-    }
-
-    // Extract dimensions (e.g., "15 inch", "16\"", etc.)
-    const sizeMatch = product.name.match(/(\d+)\s*(inch|"|in)/i)
-    if (sizeMatch) {
-      specs.dimensions = `${sizeMatch[1]} inches`
-    }
-
-    // Extract color
-    const colorKeywords = ['Chrome', 'Silver', 'Black', 'Matte', 'Polished', 'Gloss']
-    colorKeywords.forEach(color => {
-      if (product.name.includes(color) || product.description.includes(color)) {
-        specs.color = color
-      }
-    })
-
-    // Extract brand
-    const brandKeywords = ['Fuel Rider', 'Premium', 'Universal', 'OEM']
-    brandKeywords.forEach(brand => {
-      if (product.name.includes(brand) || product.description.includes(brand)) {
-        specs.brand = brand
-      }
-    })
-    if (!specs.brand) specs.brand = 'OnePacificHub'
-
-    // Installation type
-    if (product.name.includes('Snap-On') || product.description.includes('snap')) {
-      specs.installationType = 'Snap-On Installation'
-    } else if (product.name.includes('Push-On') || product.description.includes('push')) {
-      specs.installationType = 'Push-On Installation'
-    }
-
-    return specs
-  }, [product])
 
   if (loadingProduct) {
     return (
@@ -368,11 +171,12 @@ const ProductDetailPage = () => {
   const decrementQuantity = () => setQuantity(prev => Math.max(1, prev - 1))
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 pt-36 md:pt-44 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
+            ...(parentCategory ? [{ label: parentCategory.name, href: `/category/${parentCategory.slug}` }] : []),
             { label: categoryInfo?.name, href: `/products/${category}` },
             { label: product?.name, href: null }
           ]}
@@ -527,88 +331,14 @@ const ProductDetailPage = () => {
               </p>
             </div>
 
-            {/* Product Specifications */}
-            <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Product Specifications</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {specifications.dimensions && (
-                  <div className="flex items-start gap-3">
-                    <Package className="text-blue-600 flex-shrink-0 mt-1" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-500">Dimensions</p>
-                      <p className="font-semibold text-gray-900">{specifications.dimensions}</p>
-                    </div>
-                  </div>
-                )}
-                {specifications.color && (
-                  <div className="flex items-start gap-3">
-                    <Palette className="text-blue-600 flex-shrink-0 mt-1" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-500">Color</p>
-                      <p className="font-semibold text-gray-900">{specifications.color}</p>
-                    </div>
-                  </div>
-                )}
-                {specifications.brand && (
-                  <div className="flex items-start gap-3">
-                    <Building2 className="text-blue-600 flex-shrink-0 mt-1" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-500">Brand</p>
-                      <p className="font-semibold text-gray-900">{specifications.brand}</p>
-                    </div>
-                  </div>
-                )}
-                {specifications.installationType && (
-                  <div className="flex items-start gap-3">
-                    <Wrench className="text-blue-600 flex-shrink-0 mt-1" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-500">Installation Type</p>
-                      <p className="font-semibold text-gray-900">{specifications.installationType}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Product Specifications - Clean Component */}
+            <ProductSpecs product={product} />
 
-            {/* About this item */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">About this item</h2>
-              {descriptionBlocks.length > 0 ? (
-                <div className="space-y-3">
-                  {descriptionBlocks.map((block, index) => (
-                    isCompatibilityLine(block) || block.startsWith('• ') ? (
-                      <div key={index} className="flex items-start gap-3">
-                        <Check className="text-green-500 flex-shrink-0 mt-1" size={20} />
-                        <span className="text-gray-700">
-                          {block.replace(/^[•✓]\s*/, '')}
-                        </span>
-                      </div>
-                    ) : isLeadHighlightLine(block) ? (
-                      <p key={index} className="text-gray-900 font-semibold leading-relaxed">
-                        {block}
-                      </p>
-                    ) : (
-                      <p key={index} className="text-gray-700 leading-relaxed">
-                        {block}
-                      </p>
-                    )
-                  ))}
-                </div>
-              ) : (
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3">
-                    <Check className="text-green-500 flex-shrink-0 mt-1" size={20} />
-                    <span className="text-gray-700">{product.description}</span>
-                  </li>
-                  {product.features && product.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <Check className="text-green-500 flex-shrink-0 mt-1" size={20} />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            {/* Fitment Table - Clean Component */}
+            <FitmentTable product={product} />
+
+            {/* Product Notes - Clean Component */}
+            <ProductNotes product={product} />
 
             {/* Quantity Selector & Add to Cart */}
             <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">

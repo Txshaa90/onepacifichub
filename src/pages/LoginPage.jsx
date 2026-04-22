@@ -74,7 +74,7 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="flex-1 w-full min-h-0 flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-24 pb-16">
+    <div className="flex-1 w-full min-h-0 flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50 pt-36 md:pt-44 pb-16">
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

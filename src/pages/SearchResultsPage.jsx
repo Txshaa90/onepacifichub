@@ -12,7 +12,7 @@ const SearchResultsPage = () => {
   const results = useMemo(() => searchLocalProducts(query), [query])
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 pt-36 md:pt-44 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <PageBackLink to="/" label="Back to home" />
         <Breadcrumb items={[{ label: 'Search', href: null }]} />
