@@ -240,6 +240,19 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const updateGarage = async (vehicles) => {
+    try {
+      setError(null)
+      const updatedUser = await supabaseAuthService.updateSupabaseGarage(vehicles)
+      setUser(updatedUser)
+      return { success: true, vehicles: updatedUser.garage }
+    } catch (err) {
+      const errorMessage = err.message || 'Could not update your garage'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
+    }
+  }
+
   const value = {
     user,
     loading,
@@ -250,6 +263,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
+    updateGarage,
     changePassword,
     resendVerificationEmail,
     isAuthenticated: !!user,

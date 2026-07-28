@@ -29,14 +29,20 @@ const AutoUpgradesPage = () => {
       eyebrow: 'Explore More',
       description: 'Prepare for your next adventure with off-road gear and accessories built for tougher roads, utility, and visual upgrades that support your next setup.',
       image: '/images/Off Road Gears and Accessories.jpg',
-      link: '/products'
+      link: '/products',
+      state: {
+        parentBreadcrumb: { label: 'Auto Upgrades', href: '/auto-upgrades' }
+      }
     },
     {
       title: 'Floor Mats and Car Covers',
       eyebrow: 'Explore More',
       description: 'Discover protective essentials like floor mats and car covers that help keep your vehicle clean, protected, and ready for daily use.',
       image: '/images/Floor Mats and Car Covers.jpg',
-      link: '/products'
+      link: '/products',
+      state: {
+        parentBreadcrumb: { label: 'Auto Upgrades', href: '/auto-upgrades' }
+      }
     }
   ]
 
@@ -80,7 +86,7 @@ const AutoUpgradesPage = () => {
               <Link
                 key={category.title}
                 to={category.link}
-                state={{
+                state={category.state || {
                   parentBreadcrumb: { label: 'Auto Upgrades', href: '/auto-upgrades' },
                   backLink: { label: 'Back to Auto Upgrades', href: '/auto-upgrades' }
                 }}

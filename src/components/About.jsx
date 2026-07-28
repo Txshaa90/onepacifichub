@@ -64,6 +64,7 @@ const About = () => {
             <Link
               key={section.title}
               to={section.link}
+              state={section.link === '/auto-upgrades' ? undefined : { parentBreadcrumb: { label: 'Shop by Category', href: '/products' } }}
               className="block h-full"
               id={
                 section.title === 'DIY Auto Upgrades'

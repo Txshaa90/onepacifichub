@@ -1,3 +1,6 @@
+import { products as realProductsByCategory } from './products_real.js'
+import { getProductPartNumbers } from '../lib/productPresentation.js'
+
 const curatedProducts = [
   {
     id: 'hc-001',
@@ -67,27 +70,333 @@ const curatedProducts = [
   }
 ]
 
-export const getAllLocalProducts = () => curatedProducts
+const KNOWN_MAKES = [
+  'Acura',
+  'Audi',
+  'BMW',
+  'Buick',
+  'Cadillac',
+  'Chevrolet',
+  'Chrysler',
+  'Dodge',
+  'Ford',
+  'GMC',
+  'Honda',
+  'Hyundai',
+  'Infiniti',
+  'Jeep',
+  'Kia',
+  'Lexus',
+  'Lincoln',
+  'Mazda',
+  'Mercedes-Benz',
+  'Mercury',
+  'Mini',
+  'Mitsubishi',
+  'Nissan',
+  'Pontiac',
+  'Ram',
+  'Saturn',
+  'Subaru',
+  'Toyota',
+  'Volkswagen',
+  'Volvo'
+]
+
+const FITMENT_STOP_WORDS = [
+  'set',
+  'standard',
+  'steel',
+  'wheel',
+  'wheels',
+  'wheelcover',
+  'wheelcovers',
+  'wheel',
+  'cover',
+  'covers',
+  'hubcap',
+  'hubcaps',
+  'snap-on',
+  'snap',
+  'factory',
+  'alloy',
+  'chrome',
+  'silver',
+  'gloss',
+  'black',
+  'replacement'
+]
+
+const normalizeWhitespace = (value) => value.replace(/\s+/g, ' ').trim()
+
+const titleCase = (value) =>
+  value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+
+const CATEGORY_SLUGS_BY_SOURCE_KEY = {
+  wheelSimulator: 'wheel-simulator',
+  trimRings: 'trim-rings'
+}
+
+const realProducts = Object.entries(realProductsByCategory).flatMap(([sourceKey, items]) => {
+  const categorySlug = CATEGORY_SLUGS_BY_SOURCE_KEY[sourceKey] || sourceKey
+
+  return items.map((product) => ({
+    ...product,
+    categorySlug: product.categorySlug || categorySlug
+  }))
+})
+
+const searchableProducts = realProducts.length ? realProducts : curatedProducts
+
+const extractFitmentText = (product) =>
+  normalizeWhitespace(
+    [
+      product.name,
+      product.description,
+      ...(product.features || []),
+      product.metafield?.value || '',
+      product.metafields?.custom?.fitment || ''
+    ]
+      .filter(Boolean)
+      .join(' ')
+  )
+
+const extractYearValues = (text) => {
+  const years = new Set()
+  const rangePattern = /\b((?:19|20)\d{2})\s*[-–—]\s*((?:19|20)\d{2})\b/g
+  let rangeMatch = rangePattern.exec(text)
+
+  while (rangeMatch) {
+    const start = Number(rangeMatch[1])
+    const end = Number(rangeMatch[2])
+
+    if (start <= end && end - start <= 50) {
+      for (let year = start; year <= end; year += 1) {
+        years.add(String(year))
+      }
+    }
+
+    rangeMatch = rangePattern.exec(text)
+  }
+
+  const matches = text.match(/\b(?:19|20)\d{2}\b/g) || []
+  matches.forEach((year) => years.add(year))
+
+  return Array.from(years)
+}
+
+const extractMakeValue = (text) => {
+  const lower = text.toLowerCase()
+  return KNOWN_MAKES.find((make) => lower.includes(make.toLowerCase())) || ''
+}
+
+const extractModelValue = (text, make) => {
+  if (!make) return ''
+
+  const makeIndex = text.toLowerCase().indexOf(make.toLowerCase())
+  if (makeIndex === -1) return ''
+
+  const afterMake = text.slice(makeIndex + make.length)
+  const tokens = afterMake
+    .replace(/[()]/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.replace(/^[^a-z0-9]+|[^a-z0-9-]+$/gi, ''))
+    .filter(Boolean)
+
+  const modelTokens = []
+  for (const token of tokens) {
+    const lower = token.toLowerCase()
+    if (FITMENT_STOP_WORDS.includes(lower)) break
+    if (/^(?:19|20)\d{2}$/.test(token)) continue
+    modelTokens.push(token)
+    if (modelTokens.length === 3) break
+  }
+
+  return normalizeWhitespace(modelTokens.join(' '))
+}
+
+const extractTrimValue = (text, model) => {
+  if (!model) return ''
+
+  const modelIndex = text.toLowerCase().indexOf(model.toLowerCase())
+  if (modelIndex === -1) return ''
+
+  const afterModel = text.slice(modelIndex + model.length)
+  const tokens = afterModel
+    .replace(/[()]/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.replace(/^[^a-z0-9]+|[^a-z0-9-]+$/gi, ''))
+    .filter(Boolean)
+
+  const trimTokens = []
+  for (const token of tokens) {
+    const lower = token.toLowerCase()
+    if (FITMENT_STOP_WORDS.includes(lower)) break
+    if (/^(?:19|20)\d{2}$/.test(token)) continue
+    trimTokens.push(token)
+    if (trimTokens.length === 3) break
+  }
+
+  return titleCase(normalizeWhitespace(trimTokens.join(' ')))
+}
+
+export const getProductFitment = (product) => {
+  const text = extractFitmentText(product)
+  const years = extractYearValues(text)
+  const make = extractMakeValue(text)
+  const model = extractModelValue(text, make)
+  const trim = extractTrimValue(text, model)
+
+  return {
+    years,
+    make,
+    model,
+    trim
+  }
+}
+
+export const getAllLocalProducts = () => searchableProducts
 
 export const getLocalProductsByCategorySlug = (categorySlug) =>
-  curatedProducts.filter((product) => product.categorySlug === categorySlug)
+  searchableProducts.filter((product) => product.categorySlug === categorySlug)
 
 export const getLocalProductByCategoryAndId = (categorySlug, productId) =>
-  curatedProducts.find(
+  searchableProducts.find(
     (product) => product.categorySlug === categorySlug && product.id === productId
   ) || null
 
 export const getFeaturedLocalProducts = () => curatedProducts.slice(0, 4)
 
+export const getSearchableProducts = () => searchableProducts
+
 export const searchLocalProducts = (query) => {
   const normalized = query.trim().toLowerCase()
   if (!normalized) return []
 
-  return curatedProducts.filter((product) => {
-    const haystack = [product.id, product.name, product.description, ...(product.features || [])]
+  return searchableProducts.filter((product) => {
+    const partNumbers = getProductPartNumbers(product)
+    const skuValues = [
+      product.sku,
+      product.metafields?.custom?.sku,
+      partNumbers.onePacificHub,
+      partNumbers.keystone,
+      partNumbers.oxGord
+    ]
+      .filter(Boolean)
       .join(' ')
       .toLowerCase()
 
-    return haystack.includes(normalized)
+    return skuValues.includes(normalized)
   })
+}
+
+export const getCategoriesForFitment = (filters = {}) => {
+  const matchingProducts = searchProductsByFitment(filters)
+  const counts = matchingProducts.reduce((result, product) => {
+    result[product.categorySlug] = (result[product.categorySlug] || 0) + 1
+    return result
+  }, {})
+
+  return Object.entries(counts)
+    .map(([categorySlug, productCount]) => ({ categorySlug, productCount }))
+    .sort((a, b) => b.productCount - a.productCount)
+}
+
+export const searchProductsByFitment = ({ year = '', make = '', model = '', trim = '' }) => {
+  const selectedYear = year.trim()
+  const selectedMake = make.trim().toLowerCase()
+  const selectedModel = model.trim().toLowerCase()
+  const selectedTrim = trim.trim().toLowerCase()
+
+  return searchableProducts.filter((product) => {
+    const fitment = getProductFitment(product)
+    const matchesYear = !selectedYear || fitment.years.includes(selectedYear)
+    const matchesMake = !selectedMake || fitment.make.toLowerCase() === selectedMake
+    const matchesModel = !selectedModel || fitment.model.toLowerCase() === selectedModel
+    const matchesTrim = !selectedTrim || fitment.trim.toLowerCase() === selectedTrim
+
+    return matchesYear && matchesMake && matchesModel && matchesTrim
+  })
+}
+
+const matchesFitmentFilters = (fitment, { year = '', make = '', model = '', trim = '' }) => {
+  const selectedYear = year.trim()
+  const selectedMake = make.trim().toLowerCase()
+  const selectedModel = model.trim().toLowerCase()
+  const selectedTrim = trim.trim().toLowerCase()
+
+  const matchesYear = !selectedYear || fitment.years.includes(selectedYear)
+  const matchesMake = !selectedMake || fitment.make.toLowerCase() === selectedMake
+  const matchesModel = !selectedModel || fitment.model.toLowerCase() === selectedModel
+  const matchesTrim = !selectedTrim || fitment.trim.toLowerCase() === selectedTrim
+
+  return matchesYear && matchesMake && matchesModel && matchesTrim
+}
+
+export const getFitmentOptions = (products = searchableProducts, filters = {}) => {
+  const fitmentRows = products
+    .map((product) => ({
+      product,
+      fitment: getProductFitment(product)
+    }))
+    .filter(({ fitment }) => fitment.years.length || fitment.make || fitment.model || fitment.trim)
+
+  const years = Array.from(
+    new Set(fitmentRows.flatMap(({ fitment }) => fitment.years))
+  ).sort((a, b) => Number(b) - Number(a))
+
+  const makeRows = fitmentRows.filter(({ fitment }) =>
+    matchesFitmentFilters(fitment, { year: filters.year })
+  )
+
+  const makes = Array.from(
+    new Set(makeRows.map(({ fitment }) => fitment.make).filter(Boolean))
+  ).sort()
+
+  const modelsByMake = {}
+  const trimsByMakeModel = {}
+
+  makes.forEach((make) => {
+    const models = Array.from(
+      new Set(
+        fitmentRows
+          .filter(({ fitment }) =>
+            fitment.make === make &&
+            fitment.model &&
+            matchesFitmentFilters(fitment, { year: filters.year })
+          )
+          .map(({ fitment }) => fitment.model)
+      )
+    ).sort()
+
+    modelsByMake[make] = models
+
+    models.forEach((model) => {
+      const trims = Array.from(
+        new Set(
+          fitmentRows
+            .filter(({ fitment }) =>
+              fitment.make === make &&
+              fitment.model === model &&
+              fitment.trim &&
+              matchesFitmentFilters(fitment, { year: filters.year })
+            )
+            .map(({ fitment }) => fitment.trim)
+        )
+      ).sort()
+
+      trimsByMakeModel[`${make}::${model}`] = trims
+    })
+  })
+
+  return {
+    years,
+    makes,
+    modelsByMake,
+    trimsByMakeModel
+  }
 }

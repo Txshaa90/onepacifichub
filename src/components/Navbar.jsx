@@ -6,6 +6,7 @@ import Logo from './Logo'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { a11yAction } from '../lib/controlHints'
+import { mainCategories, getSubcategoriesForMainCategory } from '../data/categories'
 
 const Navbar = () => {
   const navigate = useNavigate()
@@ -15,20 +16,24 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [openDesktopMenu, setOpenDesktopMenu] = useState(null)
   const userMenuRef = useRef(null)
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50)
+      setScrolled(window.scrollY > 30)
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setUserMenuOpen(false)
+      }
+      if (!event.target.closest('[data-desktop-nav]')) {
+        setOpenDesktopMenu(null)
       }
     }
 
@@ -36,341 +41,330 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleLogout = async (e) => {
-    e?.preventDefault?.()
-    e?.stopPropagation?.()
+  const handleLogout = async (event) => {
+    event?.preventDefault?.()
+    event?.stopPropagation?.()
     await logout()
     setUserMenuOpen(false)
     setIsOpen(false)
     navigate('/', { replace: true })
   }
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault()
+  const handleSearchSubmit = (event) => {
+    event.preventDefault()
     const query = searchQuery.trim()
     if (!query) return
     navigate(`/search?q=${encodeURIComponent(query)}`)
     setIsOpen(false)
   }
 
-  const secondaryNavItems = [
-    { name: 'Wheel Covers', href: '/category/wheel-covers' },
-    { name: 'Restyling Accessories', href: '/category/restyling-accessories' },
-    { name: 'About', href: '/#upgrade-your-ride' },
-    { name: 'Contact Us', href: '/help#support' },
-    { name: 'Shop by Category', href: '/products' }
-  ]
+  const navigationGroups = mainCategories.map((category) => ({
+    ...category,
+    href: `/category/${category.slug}`,
+    subcategories: getSubcategoriesForMainCategory(category.slug)
+  }))
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white shadow-sm'
+    <nav
+      className={`fixed inset-x-0 top-0 z-50 ${
+        scrolled ? 'bg-white/96 backdrop-blur-md' : 'bg-white'
       }`}
     >
-      <div className="border-b border-gray-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex min-h-[88px] items-center gap-4 py-4">
-            <Link to="/" className="shrink-0">
-              <Logo size="small" />
-            </Link>
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex min-h-[76px] items-center gap-4 py-3">
+            <div className="shrink-0">
+              <Logo size="small" className="gap-2" splitNavigation />
+            </div>
 
-            <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 min-w-0">
-              <div className="flex w-full overflow-hidden rounded-2xl border border-slate-900 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100">
-                <div className="hidden lg:flex items-center border-r border-gray-200 bg-gray-100 px-4 text-sm font-semibold text-gray-600">
-                  All
-                </div>
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by brand ID, part number, or product"
-                    className="w-full bg-white py-4 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-cyan-500 px-5 text-white transition hover:brightness-105"
-                  title="Search products"
+            <div className="hidden items-center gap-9 lg:flex">
+              {navigationGroups.map((group) => (
+                <div
+                  key={group.slug}
+                  className="relative"
+                  data-desktop-nav
+                  onMouseEnter={() => setOpenDesktopMenu(group.slug)}
+                  onMouseLeave={() => setOpenDesktopMenu(null)}
                 >
-                  <Search size={20} />
-                </button>
-              </div>
-            </form>
-
-            <div className="hidden md:flex items-center gap-3 shrink-0">
-              {isAuthenticated ? (
-                <div className="relative" ref={userMenuRef}>
-                  <motion.button
-                    type="button"
-                    onClick={() => setUserMenuOpen((v) => !v)}
-                    className="flex items-center gap-2 rounded-xl px-3 py-2 font-bold text-gray-900 transition-colors hover:bg-gray-100"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    aria-expanded={userMenuOpen}
-                    aria-haspopup="true"
-                    title={userMenuOpen ? 'Close account menu' : 'Open account menu'}
+                  <Link
+                    to={group.href}
+                    className="flex items-center gap-1.5 text-sm font-medium text-slate-800 hover:text-slate-950"
                   >
-                    {user?.avatarUrl ? (
-                      <img
-                        src={user.avatarUrl}
-                        alt=""
-                        className="h-8 w-8 rounded-full border border-gray-200 object-cover"
-                      />
-                    ) : (
-                      <User size={18} />
-                    )}
-                    <span className="hidden xl:flex flex-col items-start leading-tight">
-                      <span className="text-xs font-medium text-gray-500">Hello, sign in</span>
-                      <span className="max-w-[140px] truncate">
-                        {user?.firstName || user?.email?.split('@')[0] || 'Account'}
-                      </span>
-                    </span>
-                    <span className="xl:hidden">Account</span>
+                    {group.name}
                     <ChevronDown
-                      size={16}
-                      className={`text-gray-500 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
+                      size={14}
+                      className={`transition-transform ${openDesktopMenu === group.slug ? 'rotate-180' : ''}`}
                     />
-                  </motion.button>
+                  </Link>
 
-                  <AnimatePresence>
-                    {userMenuOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-0 z-[60] mt-2 w-52 overflow-hidden rounded-xl border border-gray-100 bg-white py-1 shadow-xl"
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
+                  {openDesktopMenu === group.slug && (
+                    <div className="absolute left-0 top-full w-72 pt-3">
+                      <div className="border border-slate-200 bg-white p-3 text-slate-900">
                         <Link
-                          to="/account"
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
-                          onClick={() => setUserMenuOpen(false)}
+                          to={group.href}
+                          className="mb-2 block px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-slate-50"
                         >
-                          <User size={16} className="text-gray-500" />
-                          Profile
+                          {group.name}
                         </Link>
-                        <Link
-                          to="/account#orders"
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-800 hover:bg-gray-50"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <Package size={16} className="text-gray-500" />
-                          Orders
-                        </Link>
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
-                          onClick={handleLogout}
-                          title="Log out"
-                        >
-                          <LogOut size={16} />
-                          Log out
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        {group.subcategories.map((subcategory) => (
+                          <Link
+                            key={subcategory.slug}
+                            to={`/products/${subcategory.slug}`}
+                            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+                          >
+                            {subcategory.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <Link to="/login">
-                  <motion.div
-                    className="flex items-center gap-2 rounded-xl px-4 py-2 font-bold text-gray-900 transition-colors hover:bg-gray-100"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+              ))}
+              <Link to="/products" className="text-sm font-medium text-[#ef4444] hover:text-[#dc2626]">
+                Sale
+              </Link>
+            </div>
+
+            <div className="ml-4 hidden min-w-0 flex-1 justify-end md:flex xl:ml-10">
+              <form onSubmit={handleSearchSubmit} className="w-full max-w-xs xl:max-w-sm">
+                <div className="flex border border-slate-300 focus-within:border-slate-950">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                      type="search"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder="Search by SKU..."
+                      className="w-full bg-white py-3 pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="flex min-w-[64px] items-center justify-center bg-slate-950 text-white hover:bg-slate-800"
+                      title="Search by SKU"
                   >
-                    <User size={18} />
-                    <span className="hidden xl:inline">Hello, sign in</span>
-                    <span className="xl:hidden">Sign In</span>
-                  </motion.div>
-                </Link>
-              )}
+                    <Search size={20} />
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div className="ml-auto flex items-center gap-2 md:gap-3">
+              <div className="relative hidden md:block" ref={userMenuRef}>
+                {isAuthenticated ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setUserMenuOpen((value) => !value)}
+                      className="flex items-center gap-2 px-2 py-2 font-medium text-slate-900 hover:bg-slate-100"
+                      aria-expanded={userMenuOpen}
+                    >
+                      {user?.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt=""
+                          className="h-8 w-8 rounded-full border border-slate-200 object-cover"
+                        />
+                      ) : (
+                        <User size={18} />
+                      )}
+                      <span className="hidden lg:inline">Account</span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-slate-500 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    <AnimatePresence>
+                      {userMenuOpen && (
+                        <div className="absolute right-0 z-[60] mt-2 w-52 border border-slate-200 bg-white py-1">
+                          <Link
+                            to="/account"
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <User size={16} className="text-slate-500" />
+                            Profile
+                          </Link>
+                          <Link
+                            to="/account#orders"
+                            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <Package size={16} className="text-slate-500" />
+                            Orders
+                          </Link>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                            onClick={handleLogout}
+                            title="Log out"
+                          >
+                            <LogOut size={16} />
+                            Log out
+                          </button>
+                        </div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                ) : (
+                  <Link to="/login" className="rounded-xl px-2 py-2 text-slate-900 transition hover:bg-slate-100" {...a11yAction('Sign in')}>
+                    <span className="inline-flex items-center gap-2 text-sm font-medium">
+                      <User size={16} aria-hidden />
+                      Account
+                    </span>
+                  </Link>
+                )}
+              </div>
+
+              <Link
+                to={isAuthenticated ? '/account' : '/login'}
+                className="rounded-xl p-3 text-slate-900 transition hover:bg-slate-100 md:hidden"
+                {...a11yAction(isAuthenticated ? 'Open account' : 'Sign in')}
+              >
+                <User size={20} aria-hidden />
+              </Link>
 
               <Link
                 to="/cart"
                 {...a11yAction(
-                  getCartCount() > 0
-                    ? `Shopping cart, ${getCartCount()} items`
-                    : 'Shopping cart'
+                  getCartCount() > 0 ? `Shopping cart, ${getCartCount()} items` : 'Shopping cart'
                 )}
-                className="relative flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 font-medium text-white transition-shadow hover:shadow-lg motion-safe:transition-transform active:scale-95 hover:scale-105"
+                className="relative hidden rounded-xl px-2 py-2 text-slate-900 transition hover:bg-slate-100 md:flex md:items-center md:gap-2"
               >
                 <ShoppingCart size={18} aria-hidden />
-                Cart
+                <span className="text-sm font-medium">Cart</span>
                 {getCartCount() > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
                     {getCartCount()}
                   </span>
                 )}
               </Link>
+
+              <Link
+                to="/cart"
+                {...a11yAction(
+                  getCartCount() > 0 ? `Shopping cart, ${getCartCount()} items` : 'Shopping cart'
+                )}
+                className="relative rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 p-3 text-white shadow-sm transition hover:shadow-md md:hidden"
+              >
+                <ShoppingCart size={20} aria-hidden />
+                {getCartCount() > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    {getCartCount()}
+                  </span>
+                )}
+              </Link>
+
+              <button
+                type="button"
+                className="p-3 text-slate-900 hover:bg-slate-100 md:hidden"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-expanded={isOpen}
+                aria-controls="mobile-navigation-menu"
+                {...a11yAction(isOpen ? 'Close navigation menu' : 'Open navigation menu')}
+              >
+                {isOpen ? <X size={24} aria-hidden /> : <Menu size={24} aria-hidden />}
+              </button>
             </div>
-
-            <motion.button
-              type="button"
-              className="ml-auto md:hidden text-gray-900 hover:text-blue-600 transition-colors"
-              onClick={() => setIsOpen(!isOpen)}
-              whileTap={{ scale: 0.9 }}
-              aria-expanded={isOpen}
-              aria-controls="mobile-navigation-menu"
-              {...a11yAction(isOpen ? 'Close navigation menu' : 'Open navigation menu')}
-            >
-              {isOpen ? <X size={28} aria-hidden /> : <Menu size={28} aria-hidden />}
-            </motion.button>
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden md:block border-b border-blue-500 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-12 items-center justify-between gap-6">
-            <div className="flex items-center gap-6 lg:gap-8">
-              {secondaryNavItems.map((item, index) => (
-                <Link key={item.name} to={item.href}>
-                  <motion.div
-                    className="whitespace-nowrap text-sm font-semibold text-white/95 transition-colors hover:text-slate-100"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.08 + 0.2 }}
-                    whileHover={{ y: -1 }}
-                  >
-                    {item.name}
-                  </motion.div>
-                </Link>
-              ))}
-            </div>
-
-            <p className="hidden lg:block text-sm font-medium text-white/70">
-              Search by brand ID, part number, or product
-            </p>
           </div>
         </div>
       </div>
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
+          <div
             id="mobile-navigation-menu"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="md:hidden bg-white shadow-lg"
+            className="border-b border-slate-200 bg-white md:hidden"
           >
-            <div className="space-y-1 px-4 py-6">
-              <form onSubmit={handleSearchSubmit} className="mb-5">
+            <div className="space-y-5 px-4 py-5">
+              <form onSubmit={handleSearchSubmit}>
                 <div className="flex overflow-hidden rounded-2xl border border-slate-900 shadow-sm">
-                  <div className="flex items-center border-r border-gray-200 bg-gray-100 px-4 text-sm font-semibold text-gray-600">
-                    All
-                  </div>
                   <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input
                       type="search"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by brand ID, part number, or product"
-                      className="w-full bg-white py-3 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none"
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder="Search by SKU"
+                      className="w-full bg-white py-3 pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none"
                     />
                   </div>
                   <button
                     type="submit"
                     className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-cyan-500 px-4 text-white"
-                    title="Search products"
+                    title="Search by SKU"
                   >
                     <Search size={18} />
                   </button>
                 </div>
               </form>
 
-              {secondaryNavItems.map((item, index) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <motion.div
-                    className="block py-2 font-semibold text-gray-900 hover:text-blue-600"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+              {navigationGroups.map((group) => (
+                <div key={group.slug} className="rounded-2xl border border-slate-200 p-4">
+                  <Link
+                    to={group.href}
+                    onClick={() => setIsOpen(false)}
+                    className="block text-base font-semibold text-slate-950"
                   >
-                    {item.name}
-                  </motion.div>
-                </Link>
+                    {group.name}
+                  </Link>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {group.subcategories.map((subcategory) => (
+                      <Link
+                        key={subcategory.slug}
+                        to={`/products/${subcategory.slug}`}
+                        onClick={() => setIsOpen(false)}
+                        className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700"
+                      >
+                        {subcategory.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               ))}
 
               {isAuthenticated ? (
-                <>
-                  <Link to="/account" onClick={() => setIsOpen(false)}>
-                    <motion.div
-                      className="mt-2 flex items-center gap-2 border-t border-gray-100 pt-3 font-medium text-gray-700"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <User size={18} />
-                      Profile
-                    </motion.div>
+                <div className="rounded-2xl border border-slate-200 p-4">
+                  <Link
+                    to="/account"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-2 py-2 text-sm font-medium text-slate-700"
+                  >
+                    <User size={18} />
+                    Profile
                   </Link>
-                  <Link to="/account#orders" onClick={() => setIsOpen(false)}>
-                    <motion.div
-                      className="flex items-center gap-2 py-2 font-medium text-gray-700"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.45 }}
-                    >
-                      <Package size={18} />
-                      Orders
-                    </motion.div>
+                  <Link
+                    to="/account#orders"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-2 py-2 text-sm font-medium text-slate-700"
+                  >
+                    <Package size={18} />
+                    Orders
                   </Link>
                   <button
                     type="button"
-                    title="Log out"
-                    className="flex w-full items-center gap-2 py-2 font-medium text-red-600"
-                    onClick={() => {
-                      handleLogout()
-                    }}
+                    className="flex items-center gap-2 py-2 text-sm font-medium text-red-600"
+                    onClick={handleLogout}
                   >
                     <LogOut size={18} />
                     Log out
                   </button>
-                </>
+                </div>
               ) : (
-                <Link to="/login" onClick={() => setIsOpen(false)}>
-                  <motion.div
-                    className="mt-2 flex w-full items-center gap-2 border-t border-gray-100 pt-3 font-medium text-gray-700 hover:text-blue-600"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <User size={18} />
-                    Sign In
-                  </motion.div>
+                <Link
+                  to="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="block rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700"
+                >
+                  Sign in
                 </Link>
               )}
-
-              <Link
-                to="/cart"
-                onClick={() => setIsOpen(false)}
-                {...a11yAction(
-                  getCartCount() > 0
-                    ? `Shopping cart, ${getCartCount()} items`
-                    : 'Shopping cart'
-                )}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-3 font-medium text-white motion-safe:active:scale-95"
-              >
-                <ShoppingCart size={18} aria-hidden />
-                Cart
-              </Link>
             </div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
-    </motion.nav>
+    </nav>
   )
 }
 

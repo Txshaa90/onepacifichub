@@ -1,121 +1,67 @@
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
-import { useRef } from 'react'
 import { Star } from 'lucide-react'
 
+const reviews = [
+  {
+    text: 'The fitment-first search made it much easier to narrow down the right wheel cover for my Camry.',
+    author: 'Anthony P.',
+    role: 'Toyota Camry owner',
+    image: '/images/Person 1.jpeg'
+  },
+  {
+    text: 'The product page answered the key questions right away, and adding to cart felt a lot smoother.',
+    author: 'Melissa R.',
+    role: 'Shopper reviewing styling accessories',
+    image: '/images/Person 2.jpeg'
+  },
+  {
+    text: 'I like that the site now focuses on the main categories instead of making me dig through extra menus.',
+    author: 'Jordan T.',
+    role: 'Returning wheel cover customer',
+    image: '/images/Person 1.jpeg'
+  }
+]
+
 const Testimonials = () => {
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
-
-  const testimonials = [
-    {
-      text: "onepacifichub made my fishing trip unforgettable with their top-notch gear and accessories!",
-      author: "Sarah Johnson",
-      role: "Fishing Enthusiast",
-      image: "/images/Person 2.jpeg",
-      delay: 0.2
-    },
-    {
-      text: "The DIY auto upgrades transformed my vehicle; I couldn't be happier with the results!",
-      author: "Mike Chen",
-      role: "Auto Enthusiast",
-      image: "/images/Person 1.jpeg",
-      delay: 0.4
-    }
-  ]
-
   return (
-    <section ref={ref} className="py-24 bg-gradient-to-br from-gray-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-            Adventure Awaits
-          </h2>
-          <p className="text-xl text-gray-600">
-            Real experiences from real adventurers
+    <section className="bg-slate-950 py-24 text-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 max-w-3xl">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.22em] text-cyan-300">
+            Customer Reviews
           </p>
-        </motion.div>
+          <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
+            What customers are saying
+          </h2>
+          <p className="mt-4 text-lg leading-8 text-slate-300">
+            Simple feedback from shoppers who found the right parts faster.
+          </p>
+        </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-          {/* Image of People */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
-          >
-            <div className="relative h-96 rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800"
-                alt="Happy customers on adventure"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/40 to-transparent" />
-            </div>
-            {/* Floating badge */}
-            <motion.div
-              className="absolute -bottom-6 -right-6 bg-white rounded-2xl p-6 shadow-xl"
-              initial={{ scale: 0 }}
-              animate={isInView ? { scale: 1 } : { scale: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {reviews.map((review) => (
+            <article
+              key={review.author}
+              className="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-[0_18px_40px_rgba(15,23,42,0.2)] backdrop-blur"
             >
-              <div className="flex items-center gap-2 mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="fill-yellow-400 text-yellow-400" size={20} />
+              <div className="mb-5 flex gap-1 text-amber-400">
+                {Array.from({ length: 5 }).map((_, starIndex) => (
+                  <Star key={starIndex} size={18} className="fill-current" />
                 ))}
               </div>
-              <p className="text-2xl font-bold text-gray-900">4.8/5.0</p>
-              <p className="text-sm text-gray-600">Customer Rating</p>
-            </motion.div>
-          </motion.div>
-
-          {/* Testimonials */}
-          <div className="space-y-6">
-          {testimonials.map((testimonial, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.6, delay: testimonial.delay }}
-              whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-              className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-8 shadow-lg"
-            >
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
-                    transition={{ delay: testimonial.delay + (i * 0.1) }}
-                  >
-                    <Star className="fill-yellow-400 text-yellow-400" size={20} />
-                  </motion.div>
-                ))}
-              </div>
-              
-              <p className="text-gray-700 text-lg mb-6 italic">
-                "{testimonial.text}"
-              </p>
-              
-              <div className="flex items-center gap-4">
-                <img 
-                  src={testimonial.image}
-                  alt={testimonial.author}
-                  className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
+              <p className="text-lg leading-8 text-slate-100">&ldquo;{review.text}&rdquo;</p>
+              <div className="mt-8 flex items-center gap-4">
+                <img
+                  src={review.image}
+                  alt={review.author}
+                  className="h-14 w-14 rounded-full object-cover"
                 />
                 <div>
-                  <p className="font-bold text-gray-900">{testimonial.author}</p>
-                  <p className="text-gray-600 text-sm">{testimonial.role}</p>
+                  <p className="font-semibold">{review.author}</p>
+                  <p className="text-sm text-slate-400">{review.role}</p>
                 </div>
               </div>
-            </motion.div>
+            </article>
           ))}
-          </div>
         </div>
       </div>
     </section>

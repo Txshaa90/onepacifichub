@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import Breadcrumb from '../components/Breadcrumb'
-import PageBackLink from '../components/PageBackLink'
 import {
   findMainCategoryBySlug,
   getSubcategoriesForMainCategory
@@ -17,19 +16,16 @@ const MainCategoryPage = () => {
   }
 
   const subcategories = getSubcategoriesForMainCategory(category.slug)
+
+  // Use state if available, otherwise determine the best label
   const parentBreadcrumb = location.state?.parentBreadcrumb || {
     label: 'Shop by Category',
     href: '/products'
   }
-  const backLink = location.state?.backLink || {
-    label: 'Back to shop by category',
-    href: '/products'
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-40 md:pt-44 pb-16">
+    <div className="min-h-screen bg-gray-50 pt-20 md:pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <PageBackLink to={backLink.href} label={backLink.label} />
         <Breadcrumb
           items={[
             parentBreadcrumb,
@@ -71,6 +67,7 @@ const MainCategoryPage = () => {
                   <Link
                     key={subcategory.slug}
                     to={`/products/${subcategory.slug}`}
+                    state={{ parentBreadcrumb }}
                     className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 transition hover:border-blue-300 hover:bg-white hover:shadow-md"
                   >
                     <div className="flex items-start justify-between gap-4">

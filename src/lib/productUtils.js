@@ -32,7 +32,6 @@ export const splitLongDescriptionBlock = (block) => {
 
   let next = block
   markers.forEach((marker) => {
-    // Split before the marker if there's a space or if it's at the start
     const pattern = new RegExp(`(?:\\s+|^)(?=${marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g')
     next = next.replace(pattern, '\n')
   })
@@ -43,27 +42,21 @@ export const splitLongDescriptionBlock = (block) => {
     .filter(Boolean)
 }
 
-/**
- * Normalizes a string for comparison (removes non-alphanumeric, lowercase).
- */
 const normalizeForComparison = (str) => {
   return str.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
 /**
- * Removes duplicate description blocks, even if they aren't exact matches (fuzzy dedupe).
+ * Removes duplicate description blocks, even if they aren't exact matches.
  */
 export const collapseDuplicateDescriptionBlocks = (blocks) => {
   const seen = new Set()
   const result = []
 
-  blocks.forEach(block => {
-    // Skip junk blocks (dots, dashes, etc)
+  blocks.forEach((block) => {
     const normalized = normalizeForComparison(block)
     if (normalized.length < 2) return
 
-    // If we haven't seen this meaningful content before, add it
-    // We use a prefix check or exact match on normalized content
     if (!seen.has(normalized)) {
       seen.add(normalized)
       result.push(block)
@@ -92,7 +85,6 @@ export const extractDescriptionBlocks = (product) => {
     .flatMap((block) => splitLongDescriptionBlock(block))
     .map((block) => {
       let cleaned = block.replace(/\s+/g, ' ').trim()
-      // Professional cleanup: Replace Amazon references with site-appropriate terms
       cleaned = cleaned.replace(/Amazon(?:'s)? fitment tool/gi, 'our fitment guide')
       return cleaned
     })
@@ -101,22 +93,16 @@ export const extractDescriptionBlocks = (product) => {
   return collapseDuplicateDescriptionBlocks(blocks)
 }
 
-/**
- * Checks if a line is a compatibility/bullet line.
- */
 export const isCompatibilityLine = (block) => {
   const lower = block.toLowerCase()
   return (
-    lower.startsWith('compatible with:') || 
-    lower.startsWith('•') || 
+    lower.startsWith('compatible with:') ||
+    lower.startsWith('•') ||
     lower.startsWith('-') ||
     lower.startsWith('fits ')
   )
 }
 
-/**
- * Checks if a line should be highlighted as a lead/attention line.
- */
 export const isLeadHighlightLine = (block) => {
   const normalized = block.trim()
   const lower = normalized.toLowerCase()

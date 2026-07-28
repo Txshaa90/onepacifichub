@@ -12,14 +12,14 @@ const StarRating = ({ rating = 4.5, reviews = 0, size = 16, showReviews = true }
           <Star
             key={`full-${i}`}
             size={size}
-            className="fill-yellow-400 text-yellow-400"
+            className="fill-amber-500 text-amber-500"
           />
         ))}
         {hasHalfStar && (
           <div className="relative">
             <Star size={size} className="text-gray-300" />
             <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
-              <Star size={size} className="fill-yellow-400 text-yellow-400" />
+              <Star size={size} className="fill-amber-500 text-amber-500" />
             </div>
           </div>
         )}
@@ -32,7 +32,7 @@ const StarRating = ({ rating = 4.5, reviews = 0, size = 16, showReviews = true }
         ))}
       </div>
       {showReviews && (
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-slate-800">
           {rating.toFixed(1)} ({reviews} reviews)
         </span>
       )}

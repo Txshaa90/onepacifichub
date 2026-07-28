@@ -1,87 +1,33 @@
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
-import { useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const CTA = () => {
-  const navigate = useNavigate()
-  const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-100px" })
-
   return (
-    <section ref={ref} className="py-24 bg-gradient-to-br from-blue-900 via-blue-700 to-cyan-600 relative overflow-hidden">
-      {/* Animated background elements */}
-      <motion.div
-        className="absolute top-0 left-0 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"
-        animate={{
-          scale: [1, 1.2, 1],
-          x: [0, 100, 0],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      />
-      <motion.div
-        className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl"
-        animate={{
-          scale: [1, 1.3, 1],
-          x: [0, -100, 0],
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      />
+    <section className="bg-slate-950 py-20">
+      <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+        <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
+          Next Step
+        </p>
+        <h2 className="text-4xl font-bold text-white md:text-5xl">
+          Keep the launch shopping flow focused.
+        </h2>
+        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
+          Browse wheel covers and styling accessories through the updated category-first storefront.
+        </p>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-          transition={{ duration: 0.8 }}
-        >
-          <motion.h2 
-            className="text-4xl md:text-5xl font-bold text-white mb-6"
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Link
+            to="/products"
+            className="inline-flex items-center justify-center border border-white bg-white px-8 py-4 text-base font-semibold text-slate-950 hover:bg-slate-100"
           >
-            Ready to Start Your Adventure?
-          </motion.h2>
-          
-          <motion.p 
-            className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto"
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            Browse the Catalog
+          </Link>
+          <Link
+            to="/cart"
+            className="inline-flex items-center justify-center border border-white px-8 py-4 text-base font-semibold text-white hover:bg-white hover:text-slate-950"
           >
-            Explore premium auto upgrades, fishing gear, and travel essentials to enhance your adventures. 
-            Gear up and start your journey today!
-          </motion.p>
-
-          <motion.button
-            type="button"
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/products/hubcaps')}
-            title="Shop hub caps and products"
-            className="bg-white text-blue-600 px-10 py-4 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl transition-shadow inline-flex items-center gap-2 group"
-          >
-            Shop Now
-            <motion.span
-              animate={{ x: [0, 5, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <ChevronRight className="group-hover:translate-x-1 transition-transform" aria-hidden />
-            </motion.span>
-          </motion.button>
-        </motion.div>
+            Review Cart
+          </Link>
+        </div>
       </div>
     </section>
   )

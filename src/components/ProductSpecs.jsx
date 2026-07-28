@@ -1,11 +1,9 @@
-import { Package, Palette, Building2, Wrench } from 'lucide-react'
+import { Package, Palette, Wrench } from 'lucide-react'
 
 const ProductSpecs = ({ product }) => {
   const mf = product.metafields || {}
   const specs = {
-    sku: mf.custom?.sku || mf.sku || product.id,
-    brand: mf.custom?.brand || mf.brand || 'OnePacificHub',
-    category: mf.custom?.category || mf.category || '',
+    sku: mf.custom?.sku || mf.sku || product.sku || '',
     dimensions: mf.custom?.dimensions || extractDimension(product),
     color: mf.custom?.color || extractColor(product),
     installationType: mf.custom?.installation_type || mf.custom?.installationType || extractInstallation(product)
@@ -13,8 +11,6 @@ const ProductSpecs = ({ product }) => {
 
   const specFields = [
     { key: 'sku', label: 'SKU', icon: Package },
-    { key: 'brand', label: 'Brand', icon: Building2 },
-    { key: 'category', label: 'Category', icon: Building2 },
     { key: 'dimensions', label: 'Dimensions', icon: Package },
     { key: 'color', label: 'Color', icon: Palette },
     { key: 'installationType', label: 'Installation', icon: Wrench }

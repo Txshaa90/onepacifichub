@@ -25,6 +25,7 @@ import NewPasswordPage from './pages/NewPasswordPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
 import LegalPage from './pages/LegalPage'
 import HelpPage from './pages/HelpPage'
+import PawAndRoverPage from './pages/PawAndRoverPage'
 import AuthCallback from './pages/AuthCallback'
 import ProtectedRoute from './components/ProtectedRoute'
 import { CartProvider } from './context/CartContext'
@@ -73,9 +74,15 @@ function createAppRouter() {
         { path: 'terms', element: <Navigate to="/legal/terms" replace /> },
         { path: 'refund-policy', element: <Navigate to="/legal/refund-policy" replace /> },
         { path: 'orders', element: <Navigate to="/account#orders" replace /> },
-        { path: 'delivery', element: <Navigate to="/help#delivery" replace /> },
-        { path: 'returns', element: <Navigate to="/help#returns" replace /> },
+        { path: 'delivery', element: <Navigate to="/shipping" replace /> },
+        { path: 'contact', element: <HelpPage /> },
+        { path: 'shipping', element: <HelpPage /> },
+        { path: 'returns', element: <HelpPage /> },
+        { path: 'order-tracking', element: <HelpPage /> },
+        { path: 'faq', element: <HelpPage /> },
         { path: 'help', element: <HelpPage /> },
+        { path: 'help/:topic', element: <HelpPage /> },
+        { path: 'paw-and-rover', element: <PawAndRoverPage /> },
         { path: 'forgot-password', element: <ForgotPasswordPage /> },
         { path: 'verify-reset', element: <VerifyResetPage /> },
         { path: 'new-password', element: <NewPasswordPage /> },

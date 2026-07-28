@@ -1,15 +1,21 @@
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { mainCategories, getSubcategoriesForMainCategory } from '../data/categories'
 import Breadcrumb from '../components/Breadcrumb'
-import PageBackLink from '../components/PageBackLink'
 
 const CategoriesOverviewPage = () => {
+  const location = useLocation()
+
+  // Use state if available, otherwise default to nothing (it's the top level)
+  const parentBreadcrumb = location.state?.parentBreadcrumb
+
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+    <div className="min-h-screen bg-gray-50 pt-20 md:pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <PageBackLink to="/" label="Back to home" />
-        <Breadcrumb items={[{ label: 'Shop by Category', href: null }]} />
+        <Breadcrumb items={[
+          ...(parentBreadcrumb ? [parentBreadcrumb] : []),
+          { label: 'Shop by Category', href: null }
+        ]} />
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -56,6 +62,7 @@ const CategoriesOverviewPage = () => {
                       <p className="mt-3 max-w-md text-white/90">{mainCategory.description}</p>
                       <Link
                         to={`/category/${mainCategory.slug}`}
+                        state={{ parentBreadcrumb: parentBreadcrumb || { label: 'Shop by Category', href: '/products' } }}
                         className="mt-6 inline-flex w-fit items-center rounded-full bg-white px-5 py-3 font-semibold text-gray-900 transition hover:bg-gray-100"
                       >
                         Explore {mainCategory.name}
@@ -72,6 +79,7 @@ const CategoriesOverviewPage = () => {
                         <Link
                           key={subcategory.slug}
                           to={`/products/${subcategory.slug}`}
+                          state={{ parentBreadcrumb: parentBreadcrumb || { label: 'Shop by Category', href: '/products' } }}
                           className="flex items-center justify-between rounded-2xl border border-gray-200 px-4 py-4 text-gray-900 transition hover:border-blue-300 hover:bg-blue-50"
                         >
                           <div>

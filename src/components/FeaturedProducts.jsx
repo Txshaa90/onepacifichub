@@ -1,52 +1,116 @@
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProductCard from './ProductCard'
 import { getFeaturedLocalProducts } from '../data/catalog'
+import { fetchCollectionProducts, isShopifyConfigured } from '../lib/shopifyStorefront'
+import { categories } from '../data/categories'
 
-const featuredProducts = getFeaturedLocalProducts()
+const featuredCollectionConfigs = [
+  { categorySlug: 'hubcaps', handle: 'hubcaps' },
+  { categorySlug: 'wheelskins', handle: 'wheelskins' },
+  { categorySlug: 'wheel-simulator', handle: 'wheel-simulators' },
+  { categorySlug: 'trim-rings', handle: 'trim-rings' }
+]
+
+const localFeaturedProducts = getFeaturedLocalProducts()
 
 const FeaturedProducts = () => {
-  return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between gap-6 flex-wrap mb-12">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600 mb-3">
-              Featured Products
-            </p>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Popular picks ready to shop
-            </h2>
-            <p className="max-w-3xl text-lg text-gray-600">
-              A quick starting point for top wheel cover and trim products that customers browse most often.
-            </p>
-          </div>
+  const [featuredProducts, setFeaturedProducts] = useState(localFeaturedProducts)
+  const [loadingLiveProducts, setLoadingLiveProducts] = useState(true)
 
-          <Link
-            to="/products"
-            className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-5 py-3 font-semibold text-gray-900 transition hover:border-blue-300 hover:text-blue-600"
-          >
-            View all products
-            <span>→</span>
-          </Link>
+  useEffect(() => {
+    if (!isShopifyConfigured()) {
+      setLoadingLiveProducts(false)
+      return
+    }
+
+    let isCancelled = false
+
+    Promise.all(
+      featuredCollectionConfigs.map(async ({ categorySlug, handle }) => {
+        const categoryInfo = categories.find((category) => category.slug === categorySlug)
+        const products = await fetchCollectionProducts({
+          handle: categoryInfo?.shopifyHandle || handle,
+          first: 3
+        })
+
+        return products.map((product) => ({
+          ...product,
+          categorySlug,
+          rating: product.rating || 4.8,
+          reviews: product.reviews || 24
+        }))
+      })
+    )
+      .then((collections) => {
+        if (isCancelled) return
+
+        const seen = new Set()
+        const flattened = collections
+          .flat()
+          .filter((product) => {
+            const key = `${product.categorySlug}:${product.id}`
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+          .slice(0, 4)
+
+        if (flattened.length > 0) {
+          setFeaturedProducts(flattened)
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load homepage featured Shopify products:', error)
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setLoadingLiveProducts(false)
+        }
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
+  return (
+    <section className="bg-white py-20 md:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-12">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Best Sellers
+          </p>
+          <h2 className="text-4xl font-bold text-gray-900 md:text-5xl">
+            Popular picks ready to shop
+          </h2>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
-          {featuredProducts.map((product, index) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              index={index}
-              categorySlug={product.categorySlug}
-            />
-          ))}
-        </motion.div>
+        {loadingLiveProducts && featuredProducts.length === 0 ? (
+          <div className="border border-slate-200 bg-white p-10 text-center text-slate-600">
+            Loading featured products...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredProducts.map((product, index) => (
+              <ProductCard
+                key={`${product.categorySlug}-${product.id}`}
+                product={product}
+                index={index}
+                categorySlug={product.categorySlug}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="mt-12 flex justify-center">
+          <Link
+            to="/products"
+            className="inline-flex items-center border border-slate-300 px-7 py-4 font-semibold text-slate-950 hover:border-slate-950"
+          >
+            View Products
+          </Link>
+        </div>
       </div>
     </section>
   )

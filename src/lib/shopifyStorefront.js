@@ -120,9 +120,40 @@ export const fetchProductByHandle = async ({ handle }) => {
         id
         handle
         title
+        vendor
+        productType
         description
         descriptionHtml
         metafield(namespace: "custom", key: "fitment") {
+          value
+        }
+        customMetafields: metafields(identifiers: [
+          { namespace: "custom", key: "sku" }
+          { namespace: "custom", key: "brand" }
+          { namespace: "custom", key: "category" }
+          { namespace: "custom", key: "dimensions" }
+          { namespace: "custom", key: "color" }
+          { namespace: "custom", key: "installation_type" }
+          { namespace: "custom", key: "year" }
+          { namespace: "custom", key: "make" }
+          { namespace: "custom", key: "model" }
+          { namespace: "custom", key: "submodel" }
+          { namespace: "custom", key: "body_type" }
+          { namespace: "custom", key: "doors" }
+          { namespace: "custom", key: "position" }
+          { namespace: "custom", key: "fitment_notes" }
+          { namespace: "custom", key: "notes" }
+          { namespace: "custom", key: "vehicles" }
+        ]) {
+          namespace
+          key
+          type
+          value
+        }
+        keystonePartNumber: metafield(namespace: "custom", key: "keystone_part_number") {
+          value
+        }
+        oxgordPartNumber: metafield(namespace: "custom", key: "oxgord_part_number") {
           value
         }
         featuredImage {
@@ -138,6 +169,7 @@ export const fetchProductByHandle = async ({ handle }) => {
         variants(first: 1) {
           nodes {
             id
+            sku
             price {
               amount
               currencyCode
@@ -156,6 +188,18 @@ export const fetchProductByHandle = async ({ handle }) => {
   const imageNodes = (p.images?.nodes || []).map((n) => n.url).filter(Boolean)
   const images = imageNodes.length ? imageNodes : (featured ? [featured] : [])
   const variant = p.variants?.nodes?.[0]
+  const custom = Object.fromEntries(
+    (p.customMetafields || []).filter(Boolean).map((field) => {
+      if (field.type === 'json') {
+        try {
+          return [field.key, JSON.parse(field.value)]
+        } catch {
+          return [field.key, field.value]
+        }
+      }
+      return [field.key, field.value]
+    })
+  )
 
   return {
     id: p.handle,
@@ -164,12 +208,101 @@ export const fetchProductByHandle = async ({ handle }) => {
     description: stripHtml(p.description),
     descriptionHtml: p.descriptionHtml || '',
     metafield: p.metafield || null,
+    metafields: { custom },
+    sku: custom.sku || variant?.sku || '',
+    vendor: p.vendor || '',
+    productType: p.productType || '',
+    keystonePartNumber: p.keystonePartNumber?.value || '',
+    oxgordPartNumber: p.oxgordPartNumber?.value || '',
     image: images[0] || '',
     images: images.slice(0, 12),
     variantId: variant?.id || null,
     price: variant?.price?.amount ? Number(variant.price.amount) : 0,
     currencyCode: variant?.price?.currencyCode || 'USD'
   }
+}
+
+export const fetchProductsBySku = async ({ sku }) => {
+  const normalizedSku = String(sku || '').trim()
+  if (!normalizedSku) return []
+
+  const query = /* GraphQL */ `
+    query ProductsBySku($after: String) {
+      products(first: 250, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          handle
+          title
+          description
+          customSku: metafield(namespace: "custom", key: "sku") {
+            value
+          }
+          featuredImage {
+            url
+            altText
+          }
+          collections(first: 10) {
+            nodes {
+              handle
+            }
+          }
+          variants(first: 10) {
+            nodes {
+              id
+              sku
+              price {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }
+      }
+    }
+  `
+
+  const searchSku = normalizedSku.toLowerCase()
+  const results = []
+  let after = null
+  let hasNextPage = true
+
+  while (hasNextPage) {
+    const data = await fetchGraphQL(query, { after })
+    const connection = data?.products
+
+    for (const product of connection?.nodes || []) {
+      const variants = product.variants?.nodes || []
+      const customSku = product.customSku?.value || ''
+      const matchingVariant = variants.find((variant) =>
+        String(variant.sku || '').toLowerCase().includes(searchSku)
+      )
+
+      if (!customSku.toLowerCase().includes(searchSku) && !matchingVariant) continue
+
+      const variant = matchingVariant || variants[0]
+      results.push({
+        id: product.handle,
+        handle: product.handle,
+        name: product.title,
+        description: stripHtml(product.description),
+        image: product.featuredImage?.url || '',
+        images: product.featuredImage?.url ? [product.featuredImage.url] : [],
+        sku: customSku || variant?.sku || '',
+        variantId: variant?.id || null,
+        price: variant?.price?.amount ? Number(variant.price.amount) : 0,
+        currencyCode: variant?.price?.currencyCode || 'USD',
+        collectionHandles: (product.collections?.nodes || []).map((collection) => collection.handle)
+      })
+    }
+
+    hasNextPage = Boolean(connection?.pageInfo?.hasNextPage)
+    after = connection?.pageInfo?.endCursor || null
+  }
+
+  return results
 }
 
 const CART_DETAILS_QUERY = /* GraphQL */ `

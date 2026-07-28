@@ -1,6 +1,8 @@
 import Hero from '../components/Hero'
-import About from '../components/About'
-import BrandShowcase from '../components/BrandShowcase'
+import FitmentSelector from '../components/FitmentSelector'
+import Categories from '../components/Categories'
+import CredibilitySection from '../components/CredibilitySection'
+import FeaturedProducts from '../components/FeaturedProducts'
 import Testimonials from '../components/Testimonials'
 import CTA from '../components/CTA'
 
@@ -8,9 +10,11 @@ const HomePage = () => {
   return (
     <>
       <Hero />
-      <About />
-      <BrandShowcase />
+      <FitmentSelector compact />
+      <Categories compact />
+      <FeaturedProducts />
       <Testimonials />
+      <CredibilitySection />
       <CTA />
     </>
   )

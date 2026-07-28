@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import PageBackLink from '../components/PageBackLink'
+import GarageManager from '../components/GarageManager'
 
 const buildFormData = (user) => ({
   firstName: user?.firstName || '',
@@ -86,6 +87,7 @@ const statusIcons = {
 
 const sidebarSections = [
   { id: 'profile', label: 'Profile', description: 'Personal details and contact info', icon: User },
+  { id: 'garage', label: 'Garage', description: 'Your saved vehicles', icon: Truck },
   { id: 'orders', label: 'Orders', description: 'History, tracking, and reviews', icon: Package },
   { id: 'addresses', label: 'Addresses', description: 'Saved shipping and billing addresses', icon: MapPin },
   { id: 'wishlist', label: 'Wishlist', description: 'Saved products for later', icon: Heart },
@@ -95,7 +97,7 @@ const sidebarSections = [
 
 const AccountPage = () => {
   const navigate = useNavigate()
-  const { user, logout, updateProfile, changePassword, loading } = useAuth()
+  const { user, logout, updateProfile, updateGarage, changePassword, loading } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState(() => buildFormData(user))
   const [saveMessage, setSaveMessage] = useState('')
@@ -200,16 +202,12 @@ const AccountPage = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <PageBackLink to="/" label="Back to home" />
 
-          <div className="mb-8 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 p-8 text-white">
+          <div className="mb-10 border-b border-slate-200 bg-white pb-8 text-slate-950">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white">
-                  <User className="text-blue-600" size={40} />
-                </div>
+              <div>
                 <div>
                   <h1 className="text-3xl font-bold">{user.firstName} {user.lastName}</h1>
-                  <p className="text-blue-100">{user.email}</p>
-                  <p className="mt-2 text-sm text-white/80">Manage your profile, orders, saved addresses, and wishlist from one place.</p>
+                  <p className="mt-2 text-slate-600">{user.email}</p>
                 </div>
               </div>
 
@@ -219,7 +217,7 @@ const AccountPage = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 title="Log out"
-                className="flex items-center gap-2 rounded-lg bg-white px-6 py-3 font-semibold text-blue-600 transition-all hover:shadow-lg"
+                className="flex items-center gap-2 border border-slate-300 px-6 py-3 font-semibold text-slate-950 hover:border-slate-950"
               >
                 <LogOut size={20} />
                 Logout
@@ -233,7 +231,7 @@ const AccountPage = () => {
                 const Icon = section.icon
                 return (
                   <a key={section.id} href={`#${section.id}`}>
-                    <motion.div whileHover={{ y: -2 }} className="cursor-pointer rounded-xl border border-gray-200 bg-white p-5 shadow-md">
+                    <motion.div whileHover={{ y: -2 }} className="cursor-pointer border border-gray-200 bg-white p-5">
                       <div className="flex items-start gap-3 text-gray-700">
                         <Icon size={22} className="mt-1 text-blue-600" />
                         <div>
@@ -248,7 +246,7 @@ const AccountPage = () => {
             </div>
 
             <div className="space-y-8 lg:col-span-2">
-              <div id="profile" className="scroll-mt-28 rounded-xl bg-white p-8 shadow-md">
+              <div id="profile" className="scroll-mt-28 border border-gray-200 bg-white p-8">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
@@ -372,7 +370,9 @@ const AccountPage = () => {
                 </div>
               </div>
 
-              <div id="orders" className="scroll-mt-28 rounded-xl bg-white p-8 shadow-md">
+              <GarageManager vehicles={user?.garage || []} onSave={updateGarage} />
+
+              <div id="orders" className="scroll-mt-28 border border-gray-200 bg-white p-8">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">Your Orders</h2>
                   <p className="mt-1 text-sm text-gray-600">Track current orders, revisit past purchases, and manage post-delivery actions.</p>
@@ -452,7 +452,7 @@ const AccountPage = () => {
                 </div>
               </div>
 
-              <div id="addresses" className="scroll-mt-28 rounded-xl bg-white p-8 shadow-md">
+              <div id="addresses" className="scroll-mt-28 border border-gray-200 bg-white p-8">
                 <div className="mb-6 flex items-center justify-between gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Addresses</h2>
@@ -486,7 +486,7 @@ const AccountPage = () => {
                 </div>
               </div>
 
-              <div id="wishlist" className="scroll-mt-28 rounded-xl bg-white p-8 shadow-md">
+              <div id="wishlist" className="scroll-mt-28 border border-gray-200 bg-white p-8">
                 <div className="mb-6 flex items-center justify-between gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Wishlist</h2>
@@ -520,7 +520,7 @@ const AccountPage = () => {
                 </div>
               </div>
 
-              <div id="settings" className="scroll-mt-28 rounded-xl bg-white p-8 shadow-md">
+              <div id="settings" className="scroll-mt-28 border border-gray-200 bg-white p-8">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
                   <p className="mt-1 text-sm text-gray-600">Control communication preferences, order alerts, and optional updates.</p>
@@ -583,7 +583,7 @@ const AccountPage = () => {
                 </div>
               </div>
 
-              <div id="security" className="scroll-mt-28 rounded-xl bg-white p-8 shadow-md">
+              <div id="security" className="scroll-mt-28 border border-gray-200 bg-white p-8">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">Security</h2>
                   <p className="mt-1 text-sm text-gray-600">Manage your password and account protection settings.</p>

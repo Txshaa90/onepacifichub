@@ -36,7 +36,11 @@ const mapSupabaseUser = (u) => ({
   marketingEmails: u.user_metadata?.marketingEmails ?? true,
   orderUpdates: u.user_metadata?.orderUpdates ?? true,
   smsAlerts: u.user_metadata?.smsAlerts ?? false,
-  avatarUrl: u.user_metadata?.avatar_url || u.user_metadata?.picture || ''
+  avatarUrl: u.user_metadata?.avatar_url || u.user_metadata?.picture || '',
+  garage: Array.isArray(u.user_metadata?.garage) ? u.user_metadata.garage.slice(0, 3) : [],
+  pricingTier: ['general', 'loyalty', 'wholesale'].includes(u.user_metadata?.pricingTier)
+    ? u.user_metadata.pricingTier
+    : 'general'
 })
 
 // Google OAuth — redirects back to this app after provider login
@@ -233,6 +237,44 @@ export const updateSupabaseProfile = async (updates) => {
   }
 }
 
+export const updateSupabaseGarage = async (vehicles) => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured')
+  }
+
+  const normalizedVehicles = (Array.isArray(vehicles) ? vehicles : [])
+    .slice(0, 3)
+    .map(({ year = '', make = '', model = '', trim = '' }) => ({
+      year: String(year).trim(),
+      make: String(make).trim(),
+      model: String(model).trim(),
+      trim: String(trim).trim()
+    }))
+    .filter(({ year, make, model }) => year && make && model)
+
+  const {
+    data: { user: currentUser },
+    error: currentUserError
+  } = await supabase.auth.getUser()
+
+  if (currentUserError || !currentUser) {
+    throw new Error(currentUserError?.message || 'User not found')
+  }
+
+  const { data, error } = await supabase.auth.updateUser({
+    data: {
+      ...currentUser.user_metadata,
+      garage: normalizedVehicles
+    }
+  })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return mapSupabaseUser(data.user || currentUser)
+}
+
 // Verify token with Supabase
 export const verifySupabaseToken = async (token) => {
   if (!isSupabaseConfigured()) {
@@ -263,6 +305,7 @@ export default {
   logoutWithSupabase,
   getSupabaseSession,
   updateSupabaseProfile,
+  updateSupabaseGarage,
   verifySupabaseToken,
   signInWithGoogle,
   signInWithFacebook

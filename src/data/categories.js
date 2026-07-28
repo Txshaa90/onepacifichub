@@ -3,7 +3,7 @@ export const mainCategories = [
     id: 'wheel-covers',
     name: 'Wheel Covers',
     slug: 'wheel-covers',
-    description: 'Shop hub caps, wheel skins, wheel simulators, center caps, and trim rings through organized subcategories.',
+    description: 'Shop hubcaps, wheel skins, wheel simulators, center caps, and trim rings through organized subcategories.',
     image:
       'https://d2ffe4c0hazokn.cloudfront.net/media/catalog/product/cache/ba9e478d5a0771dbf79917b83147bec8/S/t/Stainless-Simulators-Group.jpg',
     accent: 'from-blue-600 to-cyan-500',
@@ -11,20 +11,20 @@ export const mainCategories = [
   },
   {
     id: 'restyling-accessories',
-    name: 'Restyling Accessories',
+    name: 'Styling Accessories',
     slug: 'restyling-accessories',
-    description: 'Browse mirror covers, door handle covers, grille inserts, and other styling parts in one main category.',
+    description: 'Browse mirror covers, door handles, wheel inserts, and styling parts through a simplified accessories catalog.',
     image:
       'https://m.media-amazon.com/images/I/71pETDSDdDL._AC_UF894,1000_QL80_.jpg',
     accent: 'from-slate-800 to-blue-700',
-    subcategories: ['mirror-covers', 'door-handle-covers', 'grille-inserts', 'restyling-others']
+    subcategories: ['mirror-covers', 'door-handle-covers', 'grille-inserts']
   }
 ]
 
 export const categories = [
   {
     id: 'hubcaps',
-    name: 'Hub Caps',
+    name: 'Hubcaps',
     slug: 'hubcaps',
     parentSlug: 'wheel-covers',
     description: 'Designed to match your original stock wheel cover or upgrade your ride with fresh new styles.'
@@ -68,24 +68,17 @@ export const categories = [
   },
   {
     id: 'door-handle-covers',
-    name: 'Door Handle Covers',
+    name: 'Door Handles',
     slug: 'door-handle-covers',
     parentSlug: 'restyling-accessories',
     description: 'Door handle covers and trim kits for quick appearance upgrades.'
   },
   {
     id: 'grille-inserts',
-    name: 'Grille Inserts',
+    name: 'Wheel Inserts',
     slug: 'grille-inserts',
     parentSlug: 'restyling-accessories',
-    description: 'Grille inserts and front-end accent pieces that sharpen the vehicle’s styling.'
-  },
-  {
-    id: 'restyling-others',
-    name: 'Others',
-    slug: 'restyling-others',
-    parentSlug: 'restyling-accessories',
-    description: 'Additional styling parts and restyling accessories beyond the main subcategories.'
+    description: 'Wheel inserts and accent pieces that sharpen the vehicle styling package.'
   }
 ]
 

@@ -1,73 +1,100 @@
-import { motion } from 'framer-motion'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ShoppingCart } from 'lucide-react'
 import StarRating from './StarRating'
-import { extractDescriptionBlocks } from '../lib/productUtils'
-import { useMemo } from 'react'
+import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { getCustomerPrice, getProductTitle } from '../lib/productPresentation'
 
 const ProductCard = ({ product, index, categorySlug: categorySlugProp }) => {
   const { category } = useParams()
+  const { addToCart } = useCart()
+  const { user } = useAuth()
+  const [isAdding, setIsAdding] = useState(false)
+  const [added, setAdded] = useState(false)
+  const [error, setError] = useState('')
   const targetCategory = categorySlugProp || category
+  const productHref = `/products/${targetCategory}/${product.id}`
+  const productTitle = getProductTitle(product)
+  const customerPrice = getCustomerPrice(product, user?.pricingTier)
 
-  const cleanDescription = useMemo(() => {
-    const blocks = extractDescriptionBlocks(product)
-    return blocks.length > 0 ? blocks[0] : product.description
-  }, [product])
+  const handleAddToCart = async () => {
+    if (!product.variantId) return
+    setIsAdding(true)
+    setError('')
+
+    try {
+      const result = await addToCart(product, 1)
+      if (result?.success) {
+        setAdded(true)
+        window.setTimeout(() => setAdded(false), 1600)
+      } else {
+        setError(result?.error || 'Could not add this product')
+      }
+    } catch (err) {
+      setError(err?.message || 'Could not add this product')
+    } finally {
+      setIsAdding(false)
+    }
+  }
 
   return (
-    <Link
-      to={`/products/${targetCategory}/${product.id}`}
-      aria-label={`${product.name}, view product details`}
-      title={`View ${product.name}`}
+    <article
+      className="flex h-full flex-col border-t border-slate-200 bg-white pt-4"
     >
-      <motion.div
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.05 }}
-        className="bg-white border border-gray-200 overflow-hidden cursor-pointer h-full flex flex-col group hover:shadow-lg transition-all"
-      >
-        {/* Product Image */}
-        <div className="relative h-56 overflow-hidden bg-white p-4">
+      <Link to={productHref} aria-label={`${productTitle}, view product details`} title={`View ${productTitle}`}>
+        <div className="relative flex h-80 items-center justify-center overflow-hidden bg-white p-0">
           <img
             src={product.image}
-            alt={product.name}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+            alt={productTitle}
+            className="max-h-full max-w-full object-contain"
           />
         </div>
+      </Link>
 
-        {/* Product Info */}
-        <div className="p-4 flex flex-col flex-grow">
-          {/* Product Name */}
-          <h3 className="text-base font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors h-12">
-            {product.name}
+      <div className="flex flex-1 flex-col p-5">
+        <Link to={productHref} className="hover:text-slate-600">
+          <h3 className="min-h-[3.25rem] text-base font-bold text-slate-950 line-clamp-2">
+            {productTitle}
           </h3>
+        </Link>
 
-          {/* Star Rating */}
-          <div className="mb-3">
-            <StarRating rating={4.5} reviews={127} size={14} />
-          </div>
-
-          {/* Price */}
-          <div className="mb-3">
-            <span className="text-2xl font-bold text-blue-600">
-              ${product.price}
-            </span>
-          </div>
-
-          {/* Description */}
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-grow">
-            {cleanDescription}
-          </p>
-
-          {/* CTA matches behavior: whole card opens the product (no nested interactive control). */}
-          <div className="mt-auto">
-            <span className="w-full bg-blue-600 text-white px-4 py-3 font-semibold flex items-center justify-center gap-2 group-hover:bg-blue-700 transition-colors">
-              View product
-            </span>
-          </div>
+        <div className="mt-3">
+          <StarRating rating={product.rating || 4.5} reviews={product.reviews || 0} size={14} />
         </div>
-      </motion.div>
-    </Link>
+
+        <div className="mt-4">
+          <span className="text-2xl font-bold text-slate-950">${customerPrice.toFixed(2)}</span>
+        </div>
+
+        <div className="mt-5 grid gap-3">
+          {product.variantId ? (
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={isAdding}
+              className={`inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white ${
+                added ? 'bg-emerald-600' : 'bg-slate-950 hover:bg-slate-800'
+              } disabled:cursor-wait disabled:opacity-70`}
+            >
+              <ShoppingCart size={16} aria-hidden />
+              {added ? 'Added to cart' : isAdding ? 'Adding...' : 'Add to cart'}
+            </button>
+          ) : null}
+
+          <Link
+            to={productHref}
+            className="inline-flex items-center justify-center border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-900 hover:border-slate-950"
+          >
+            View details
+          </Link>
+        </div>
+
+        {error ? (
+          <p className="mt-3 text-xs font-medium text-red-600">{error}</p>
+        ) : null}
+      </div>
+    </article>
   )
 }
 

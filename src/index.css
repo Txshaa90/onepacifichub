@@ -5,12 +5,10 @@
 /* Footer links (dark footer: cyan hover) */
 .footer-link {
   cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .footer-link:hover {
   color: #38bdf8;
-  transform: translateX(2px);
 }
 
 @layer base {
@@ -20,59 +18,38 @@
   }
   
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     overflow-x: hidden;
   }
 }
 
 @layer utilities {
   .animate-blob {
-    animation: blob 7s infinite;
-  }
-  
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-  
-  .animation-delay-4000 {
-    animation-delay: 4s;
+    animation: none;
   }
 }
 
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
+*,
+*::before,
+*::after {
+  animation: none !important;
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
+  scroll-behavior: auto !important;
+  transition: none !important;
+  transition-delay: 0s !important;
+  transition-duration: 0s !important;
 }
 
-@keyframes brand-marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+.hover\:-translate-y-1:hover,
+.hover\:scale-105:hover,
+.group:hover .group-hover\:scale-105,
+.disabled\:hover\:scale-100:disabled:hover {
+  transform: none !important;
 }
 
 .brand-marquee {
-  width: max-content;
-  animation: brand-marquee 28s linear infinite;
-}
-
-.brand-marquee-reverse {
-  animation-direction: reverse;
-}
-
-.brand-marquee:hover {
-  animation-play-state: paused;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
