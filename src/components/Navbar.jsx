@@ -73,7 +73,7 @@ const Navbar = () => {
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex min-h-[76px] items-center gap-4 py-3">
-            <div className="shrink-0">
+            <div className="shrink-0 lg:mr-3">
               <Logo size="small" className="gap-2" splitNavigation />
             </div>
 
