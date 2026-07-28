@@ -14,7 +14,7 @@ const Hero = () => {
         <div className="overflow-hidden">
           <div className="relative min-h-[420px] overflow-hidden md:min-h-[520px]">
             <img
-              src="/images/Banner - Ride and Rover-1.jpg"
+              src="/images/west motors.jpeg"
               alt="Vehicle accessories showcase"
               className="absolute inset-0 h-full w-full object-cover"
             />
