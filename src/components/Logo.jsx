@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-const logoImage = '/images/Icon.png'
+const logoImage = '/images/ride-and-rover-icon.png'
 
 const Logo = ({
   className = '',
