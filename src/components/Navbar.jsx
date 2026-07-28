@@ -88,7 +88,7 @@ const Navbar = () => {
                 >
                   <Link
                     to={group.href}
-                    className="flex items-center gap-1.5 text-sm font-medium text-slate-800 hover:text-slate-950"
+                    className="flex items-center gap-1.5 text-base font-medium text-slate-800 hover:text-slate-950"
                   >
                     {group.name}
                     <ChevronDown
@@ -120,13 +120,13 @@ const Navbar = () => {
                   )}
                 </div>
               ))}
-              <Link to="/products" className="text-sm font-medium text-[#ef4444] hover:text-[#dc2626]">
+              <Link to="/products" className="text-base font-medium text-[#ef4444] hover:text-[#dc2626]">
                 Sale
               </Link>
             </div>
 
             <div className="ml-4 hidden min-w-0 flex-1 justify-end md:flex xl:ml-10">
-              <form onSubmit={handleSearchSubmit} className="w-full max-w-xs xl:max-w-sm">
+              <form onSubmit={handleSearchSubmit} className="w-full max-w-[300px] xl:max-w-xs">
                 <div className="flex border border-slate-300 focus-within:border-slate-950">
                   <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -135,7 +135,7 @@ const Navbar = () => {
                       value={searchQuery}
                       onChange={(event) => setSearchQuery(event.target.value)}
                       placeholder="Search by SKU..."
-                      className="w-full bg-white py-3 pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                      className="w-full bg-white py-3 pl-11 pr-4 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none"
                     />
                   </div>
                   <button
