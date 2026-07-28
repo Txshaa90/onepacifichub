@@ -44,7 +44,7 @@ const Logo = ({
             <Link to="/" className="transition hover:text-blue-600" aria-label="Ride automotive homepage">
               Ride
             </Link>
-            <span className="mx-1 font-medium text-slate-400">and</span>
+            <span className="mx-1 font-medium">and</span>
             <Link to="/paw-and-rover" className="transition hover:text-blue-600" aria-label="Paw and Rover pet products">
               Rover
             </Link>
